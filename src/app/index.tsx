@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native'
+import ScreenStart from './Screen/login/ScreenStart'
 import React from 'react'
 
 export default function PrimeraFuncionPrueba() {
   return (
     <View style={styles.container}>
-      <Text>Hola gay</Text>
+      <ScreenStart/>
     </View>
   )
 }
