@@ -43,8 +43,8 @@ export default function ScreenLoginUser() {
             <View style={styles.cuadroInputs}>
 
                 {/* Título */}
-                <Text style={styles.titulo}>¡Bienvenido de vuelta!</Text>
-                <Text style={styles.subtitulo}>Ingresa para continuar con tu cuenta</Text>
+                <Text style={styles.titulo}>¡Bienvenido de vuelta fletero!</Text>
+                <Text style={styles.subtitulo}>Ingresa tus datos para iniciar sesion</Text>
 
                 {/* Campo correo */}
                 <Text style={styles.etiqueta}>Correo electrónico</Text>
