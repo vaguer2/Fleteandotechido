@@ -1,14 +1,14 @@
 
 import { StyleSheet, Text, View } from 'react-native'
-import ScreenStart from './Screen/login/ScreenStart'
-import ScreenLoginUser from './Screen/login/ScreenLoginUser'
-import ScreenLoginFletero from './Screen/login/ScreenLoginFletero'
+
+import ScreenFleteroRegister from './Screen/register/ScreenFleteroRegister'
+
 import React from 'react'
 
-export default function PrimeraFuncionPrueba() {
+export default function screen() {
   return (
     <View style={styles.container}>
-      <ScreenLoginFletero/>
+      <ScreenFleteroRegister />
     </View>
   )
 }
