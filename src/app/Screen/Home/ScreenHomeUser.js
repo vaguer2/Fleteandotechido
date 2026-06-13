@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity,} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useContext } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
 import { EstadoGlobalContext } from '../../../components/Context/EstadoGlobalUser';
 
 const enviosEnProceso = [
@@ -37,7 +37,7 @@ export default function ScreenHomeUsers() {
     const nombre = usuario?.nombre ?? 'Usuario';
 
     const irAlMapa = () => router.push('/Screen/Map');
-    const solicitarFlete = () => router.push('/Screen/Solicitar');
+  const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
 
     return (
         <ScrollView style={styles.container} bounces={false}>
@@ -60,7 +60,7 @@ export default function ScreenHomeUsers() {
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>En proceso</Text>
                 <TouchableOpacity onPress={irAlMapa}>
-                    <Text style={styles.seccionLink}>Ver en mapa →</Text>
+                    <Text style={styles.seccionLink}>Ver en mapa </Text>
                 </TouchableOpacity>
             </View>
 
@@ -84,7 +84,7 @@ export default function ScreenHomeUsers() {
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>Envíos recientes</Text>
                 <TouchableOpacity>
-                    <Text style={styles.seccionLink}>Ver todo →</Text>
+                    <Text style={styles.seccionLink}>Ver todo </Text>
                 </TouchableOpacity>
             </View>
 
