@@ -169,5 +169,9 @@ const styles = StyleSheet.create({
     marginTop: -(width * 0.10) / 2,    // ← sube la mitad de su propio tamaño
     left: -(width * 1) / 2,         // ← se sale exactamente la mitad por la izquierda
   },
+  image: {
+    width: 100,
+    height: 80
+  }
 
 })
