@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { router,useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
 
 const TIPOS_CARGA = [
   { id: 'muebles', label: 'Muebles' },
@@ -14,20 +17,38 @@ const RANGOS_PESO = [
   { id: '600+', label: '600+ kg' },
 ];
 
+
+
 export default function ScreenPedido() {
+  const router = useRouter();
   const [tipoCarga, setTipoCarga] = useState(null);
   const [pesoAprox, setPesoAprox] = useState(null);
   const [detalle, setDetalle] = useState('');
   const [precio, setPrecio] = useState('');
 
+  const [fotos, setFotos] = useState([]);
+const seleccionarFoto = async () => {
+  if (fotos.length >= 4) return;
+
+  const resultados = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!resultados.canceled){
+    setFotos([...fotos, resultado.assets[0].uri]);
+  }
+}
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Nuevo flete</Text>
 
-      <View style={styles.stepsRow}>
-        <View style={[styles.stepCircle, styles.stepDone]}>
-          <Text style={styles.stepDoneText}>1</Text>
-        </View>
+     <View style={styles.stepsRow}>
+  <TouchableOpacity onPress={() => router.back()}>
+    <View style={[styles.stepCircle, styles.stepDone]}>
+      <Text style={styles.stepDoneText}>1</Text>
+    </View>
+  </TouchableOpacity>
         <View style={[styles.stepLine, styles.stepLineActive]} />
         <View style={[styles.stepCircle, styles.stepActive]}>
           <Text style={styles.stepActiveText}>2</Text>
@@ -74,6 +95,19 @@ export default function ScreenPedido() {
           </TouchableOpacity>
         ))}
       </View>
+      <Text style={styles.selectionTitle}>Fotografias del cargamento</Text>
+      <View style={styles.fotosGrid}>
+        {[0, 1, 2, 3].map((i)=>(
+          <TouchableOpacity key={i} style={[styles.fotoBox, fotos[i] && styles.fotoBoxLlena]} onPress={seleccionarFoto}>
+            {fotos[i] ? (
+              <Image source={{uri: fotos[i]}} style={styles.fotoImagen}/>
+            ):(
+              <Text style={styles.fotoPlus}>+</Text>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={styles.fotoHint}>Agregar hasta 4 fotos para ayudar al fletero a prepararse mejor</Text>
 
       <Text style={styles.sectionTitle}>Descripción adicional</Text>
       <TextInput
@@ -92,7 +126,7 @@ export default function ScreenPedido() {
         onChangeText={setPrecio}
       />
 
-      <TouchableOpacity style={styles.button} onPress={() => {}}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/Screen/Pedido/ScreenFechaPedido')}>
         <Text style={styles.buttonText}>Ver cotizaciones </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -259,4 +293,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+  fotosGrid: {
+  flexDirection: 'row',
+  gap: 8,
+  marginBottom: 8,
+},
+fotoBox: {
+  width: 76,
+  height: 76,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: '#B8F0C8',
+  borderStyle: 'dashed',
+  backgroundColor: '#F0FBF4',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+fotoBoxLlena: {
+  borderStyle: 'solid',
+  borderColor: '#22C55E',
+},
+fotoImagen: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 10,
+},
+fotoPlus: {
+  fontSize: 24,
+  color: '#86EFAC',
+},
+fotoHint: {
+  fontSize: 12,
+  color: '#94A3B8',
+  marginBottom: 12,
+},
 });

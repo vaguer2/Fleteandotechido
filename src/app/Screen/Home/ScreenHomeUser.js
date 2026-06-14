@@ -3,23 +3,9 @@ import { useContext } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
 import { EstadoGlobalContext } from '../../../components/Context/EstadoGlobalUser';
 
-const enviosEnProceso = [
-    {
-       
-    },
-];
+const enviosEnProceso = [];
 
-const enviosRecientes = [
-    {
-      
-    },
-    {
-       
-    },
-    {
-        
-    },
-];
+const enviosRecientes = [];
 
 const badgeColor = (estado) => {
     switch (estado) {
@@ -44,12 +30,18 @@ export default function ScreenHomeUsers() {
 
           
             <View style={styles.header}>
-                <View>
-                    <Text style={styles.saludoSub}>Buenos días,</Text>
-                    <Text style={styles.saludoNombre}>{nombre} 👋</Text>
-                </View>
-                <View style={styles.notifDot} />
-            </View>
+  <View>
+    <Text style={styles.saludoSub}>Buenos días,</Text>
+    <Text style={styles.saludoNombre}>{nombre} 👋</Text>
+  </View>
+  <TouchableOpacity onPress={() => router.push('/Screen/Setting/ScreenSettings')}>
+    <View style={styles.avatarCircle}>
+      <Text style={styles.avatarLetra}>
+        {nombre.charAt(0).toUpperCase()}
+      </Text>
+    </View>
+  </TouchableOpacity>
+</View>
 
          
             <TouchableOpacity style={styles.btnPrincipal} onPress={solicitarFlete} activeOpacity={0.85}>
