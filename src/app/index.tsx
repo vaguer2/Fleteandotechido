@@ -1,22 +1,6 @@
-
-import { StyleSheet, Text, View } from 'react-native'
-
-import ScreenFleteroRegister from './Screen/register/ScreenFleteroRegister'
-
-import React from 'react'
-
-export default function screen() {
-  return (
-    <View style={styles.container}>
-      <ScreenFleteroRegister />
-    </View>
-  )
+import React from 'react';
+import ScreenHomeUser from './Screen/Home/ScreenHomeUser';
+import ScreenStart from './Screen/login/ScreenStart';
+export default function HomeScreen() {
+  return <ScreenStart/>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  }
-})

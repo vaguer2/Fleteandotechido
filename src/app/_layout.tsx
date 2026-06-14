@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
+import { EstadoGlobalProvider } from '../components/Context/EstadoGlobalUser';
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-    </Stack>
+    <EstadoGlobalProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </EstadoGlobalProvider>
   );
 }
