@@ -1,10 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
-import { EstadoGlobalContext } from '../../../components/Context/EstadoGlobalUser';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 const enviosEnProceso = [];
-
 const enviosRecientes = [];
 
 const badgeColor = (estado) => {
@@ -17,38 +15,35 @@ const badgeColor = (estado) => {
 };
 
 export default function ScreenHomeUsers() {
-    const { usuario } = useContext(EstadoGlobalContext);
+    const { usuario } = useAuth();
     const router = useRouter();
 
     const nombre = usuario?.nombre ?? 'Usuario';
 
     const irAlMapa = () => router.push('/Screen/Map');
-  const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
+    const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
 
     return (
         <ScrollView style={styles.container} bounces={false}>
 
-          
             <View style={styles.header}>
-  <View>
-    <Text style={styles.saludoSub}>Buenos días,</Text>
-    <Text style={styles.saludoNombre}>{nombre} 👋</Text>
-  </View>
-  <TouchableOpacity onPress={() => router.push('/Screen/Setting/ScreenSettings')}>
-    <View style={styles.avatarCircle}>
-      <Text style={styles.avatarLetra}>
-        {nombre.charAt(0).toUpperCase()}
-      </Text>
-    </View>
-  </TouchableOpacity>
-</View>
+                <View>
+                    <Text style={styles.saludoSub}>Buenos días,</Text>
+                    <Text style={styles.saludoNombre}>{nombre} 👋</Text>
+                </View>
+                <TouchableOpacity onPress={() => router.push('/Screen/Setting/ScreenSettings')}>
+                    <View style={styles.avatarCircle}>
+                        <Text style={styles.avatarLetra}>
+                            {nombre.charAt(0).toUpperCase()}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
 
-         
             <TouchableOpacity style={styles.btnPrincipal} onPress={solicitarFlete} activeOpacity={0.85}>
                 <Text style={styles.btnPrincipalText}>Solicitar nuevo flete</Text>
             </TouchableOpacity>
 
-           
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>En proceso</Text>
                 <TouchableOpacity onPress={irAlMapa}>
@@ -72,7 +67,6 @@ export default function ScreenHomeUsers() {
                 );
             })}
 
-          
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>Envíos recientes</Text>
                 <TouchableOpacity>
@@ -106,8 +100,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F7F8FA',
     },
-
-    /* Header */
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -132,8 +124,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
         backgroundColor: '#FF6B00',
     },
-
-    /* Botón principal */
     btnPrincipal: {
         margin: 20,
         backgroundColor: '#FF6B00',
@@ -151,8 +141,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
     },
-
-    /* Sección headers */
     seccionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -171,8 +159,6 @@ const styles = StyleSheet.create({
         color: '#FF6B00',
         fontWeight: '600',
     },
-
-    /* Cards */
     card: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -207,8 +193,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#8A8FA8',
     },
-
-    /* Badge */
     badge: {
         paddingHorizontal: 10,
         paddingVertical: 4,

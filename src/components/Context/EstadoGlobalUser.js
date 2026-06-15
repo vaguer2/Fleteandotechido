@@ -1,4 +1,5 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, } from 'react';  //parte de luis donde agrego el "useEffect,useContext" para detectar si ya hay una sesion iniciada en la aplicacion
+
 
 // 1. Valor por defecto para evitar undefined
 export const EstadoGlobalContext = createContext({

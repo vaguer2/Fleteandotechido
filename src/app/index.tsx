@@ -1,6 +1,5 @@
-import React from 'react';
-import ScreenHomeUser from './Screen/Home/ScreenHomeUser';
-import ScreenStart from './Screen/login/ScreenStart';
+import { Redirect } from 'expo-router';
+
 export default function HomeScreen() {
-  return <ScreenStart/>;
+  return <Redirect href="/Screen/login/ScreenStart" />;
 }

@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
-import { EstadoGlobalProvider } from '../components/Context/EstadoGlobalUser';
+import AuthProvider from '../../providers/AuthProvider';
 
 export default function RootLayout() {
   return (
-    <EstadoGlobalProvider>
+    <AuthProvider>
       <Stack screenOptions={{ headerShown: false }} />
-    </EstadoGlobalProvider>
+    </AuthProvider>
   );
 }

@@ -2,20 +2,24 @@ import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google
 import { Poppins_700Bold, Poppins_800ExtraBold, useFonts } from '@expo-google-fonts/poppins';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Dimensions, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-//import { registerAccount } from '../../services/registerService'; esta parte nos servira luego para poder hacer la coneccoin a la base de datos
+import { Dimensions, Image, Pressable, StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '../../../../lib/supabase';
+import { ScrollView } from 'react-native';
+
 const { width } = Dimensions.get('window');
 
 export default function ScreenUserRegister() {
-    const logoFleteandote = require('../../assets/logo.png')
+    const logoFleteandote = require('../../assets/logo.png');
+    const router = useRouter();
 
+    const [name, setName] = useState('');
     const [mail, setMail] = useState('');
     const [password, setPassword] = useState('');
     const [password2, setPassword2] = useState('');
     const [verPass, setVerPass] = useState(false);
     const [verPass2, setVerPass2] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [name, setName] = useState('');
 
     const [fontsLoaded] = useFonts({
         Inter_400Regular,
@@ -23,53 +27,96 @@ export default function ScreenUserRegister() {
         Inter_700Bold,
         Poppins_700Bold,
         Poppins_800ExtraBold,
-
     });
 
     if (!fontsLoaded) return null;
 
-/*
-    const requuestDB = async () => {
+    const registrarse = async () => {
+
+        //--------------------------------------------
+        //verificacion de que los datos estan llegando correctamente a la db:
+        console.log('Iniciando registro...');
+        console.log('Email:', mail);
+        console.log('Nombre:', name);
+        //--------------------------------------------
+
+
         const cleanNombre = name.trim();
         const cleanEmail = mail.trim();
 
+        // Validaciones
         if (!cleanNombre || !cleanEmail || !password || !password2) {
-            alert('Campos incompletos, Completa todos los campos para registrarte.');
+            Alert.alert('Campos incompletos', 'Completa todos los campos para registrarte.');
             return;
         }
 
         if (password !== password2) {
-            alert('Las contraseñas no coinciden.');
+            Alert.alert('Error', 'Las contraseñas no coinciden.');
             return;
         }
 
         if (password.length < 6) {
-            alert('Contaseña insegura, escribe al menos 8 caracteres');
+            Alert.alert('Contraseña insegura', 'Escribe al menos 6 caracteres.');
             return;
         }
 
         setLoading(true);
         try {
-            await registerAccount({
-                name: cleanNombre,
-                email: cleanEmail,
-                password: contra1,
-                role: 'user',
-            });
+            // 1. Crear usuario en Supabase Auth
 
-            Alert.alert('Registro exitoso', 'Tu cuenta fue creada. Revisa tu correo para confirmar tu cuenta.');
-            //navigation.navigate('login');
-        } catch (error) {
-            alert('No se pudo registrar', error.message || 'Intenta nuevamente.');
+            console.log('Llamando a supabase.auth.signUp...');
+
+            const { data, error } = await supabase.auth.signUp({
+                email: cleanEmail,
+                password: password,
+            });
+            console.log('Respuesta de signUp:', JSON.stringify(data));
+            console.log('Error de signUp:', JSON.stringify(error));
+
+            if (error) {
+                Alert.alert('Error al registrarse', error.message);
+                return;
+            }
+
+            // 2. Guardar datos adicionales en la tabla USUARIO
+            if (data.user) {
+                const { error: errorDB } = await supabase
+                    .from('usuario')
+                    .insert({
+                        usuario_id: data.user.id,
+                        nombre: cleanNombre,
+                        email: cleanEmail,
+                        contrasena_hash: 'gestionado_por_supabase_auth',
+                        activo: true,
+                    });
+                console.log('Error del insert en tabla usuario:', JSON.stringify(errorDB));
+                if (errorDB) {
+                    Alert.alert('Error', 'Cuenta creada pero no se guardaron los datos. Contacta soporte.');
+                    return;
+                }
+            }
+
+            setTimeout(() => {
+                Alert.alert(
+                    'Registro exitoso',
+                    'Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.',
+                    [{ text: 'OK', onPress: () => router.replace('/Screen/login/ScreenLoginUser') }]
+                );
+            }, 300);
+
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Intenta nuevamente.');
         } finally {
             setLoading(false);
         }
-    }
-*/
-
+    };
 
     return (
-        <View style={styles.fondo}>
+        <ScrollView
+            style={{ flex: 1, backgroundColor: '#0D2240' }}
+            contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}
+            keyboardShouldPersistTaps="handled"
+        >
             <View style={{ alignItems: 'center' }}>
                 <Text style={styles.textoInicio}>Registrate a</Text>
             </View>
@@ -78,64 +125,45 @@ export default function ScreenUserRegister() {
                 <Text style={styles.textoAlLado}>Te</Text>
                 <View>
                     <Image
-                        //source={require('../../assets/logo.png')}   <-- esta es otra forma de llamar a nuestra imagen
                         source={logoFleteandote}
                         style={styles.image}
                         resizeMode="contain"
-
                     />
                 </View>
             </View>
 
-            {/* ── Tarjeta blanca ── */}
             <View style={styles.cuadroInputs}>
-
-                {/* Título */}
                 <Text style={styles.subtitulo}>Ingresa tus datos para crear tu cuenta</Text>
 
-                {/* campo del nombre */}
                 <Text style={styles.etiqueta}>Nombre</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Ej. Cristian Alejandro"
                     placeholderTextColor="#aaa"
                     value={name}
-                    onChangeText={(nombre) => {
-                        setName(nombre);
-                        console.log(nombre)
-                    }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
+                    onChangeText={setName}
+                    autoCapitalize="words"
                 />
 
-                {/* Campo correo */}
-                <Text style={styles.etiqueta}>Correo electronico</Text>
+                <Text style={styles.etiqueta}>Correo electrónico</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Ej. Cristian Alejandro"
+                    placeholder="ejemplo@gmail.com"
                     placeholderTextColor="#aaa"
                     value={mail}
-                    onChangeText={(texto) => {
-                        setMail(texto);
-                        console.log(texto)
-                    }}
+                    onChangeText={setMail}
                     keyboardType="email-address"
                     autoCapitalize="none"
                 />
 
-                {/* Campo contraseña */}
                 <Text style={styles.etiqueta}>Contraseña</Text>
-
                 <View style={styles.inputContenedor}>
                     <TextInput
                         style={styles.inputSinBorde}
                         placeholder="Escribe acá tu contraseña"
                         placeholderTextColor="#aaa"
                         value={password}
-                        onChangeText={(pass) => {
-                            setPassword(pass);
-                            console.log(pass);
-                        }}
+                        onChangeText={setPassword}
                         secureTextEntry={!verPass}
                     />
                     <Pressable onPress={() => setVerPass(!verPass)}>
@@ -146,52 +174,43 @@ export default function ScreenUserRegister() {
                         />
                     </Pressable>
                 </View>
+
                 <Text style={styles.etiqueta}>Confirmar contraseña</Text>
                 <View style={styles.inputContenedor}>
                     <TextInput
                         style={styles.inputSinBorde}
-                        placeholder="Escribe acá tu contraseña"
+                        placeholder="Repite tu contraseña"
                         placeholderTextColor="#aaa"
                         value={password2}
-                        onChangeText={(pass) => {
-                            setPassword2(pass);
-                            console.log(pass);
-                        }}
+                        onChangeText={setPassword2}
                         secureTextEntry={!verPass2}
                     />
-                    <Pressable onPress={() => setVerPass(!verPass2)}>
+                    <Pressable onPress={() => setVerPass2(!verPass2)}>
                         <Ionicons
                             name={verPass2 ? "eye-outline" : "eye-off-outline"}
                             size={20}
                             color="#888"
                         />
                     </Pressable>
-                    {/* nos falta poner la funcion que esta arriba "requuesDb que es para que pueda detectar que los datos son correctos segun la base de datos en la nube" */}
-
                 </View>
+
                 {password2.length > 0 && password !== password2 && (
-                    <Text style={styles.errorText}>
-                        Las contraseñas no coinciden
-                    </Text>
+                    <Text style={styles.errorText}>Las contraseñas no coinciden</Text>
                 )}
 
-
-                {/* Botón Entrar */}
                 <Pressable
                     style={({ pressed }) => [styles.botonEntrar, pressed && { opacity: 0.8 }]}
-                    onPress={() => console.log('entrando...')}
+                    onPress={registrarse}
+                    disabled={loading}
                 >
-                    <Text style={styles.textoBotonEntrar}>Entrar</Text>
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.textoBotonEntrar}>Crear cuenta</Text> }
                 </Pressable>
 
-                {/* Divider */}
                 <View style={styles.divider}>
                     <View style={styles.linea} />
-                    <Text style={styles.textoDivider}>o registrate con</Text>
+                    <Text style={styles.textoDivider}>o regístrate con</Text>
                     <View style={styles.linea} />
                 </View>
-
-
 
                 <Pressable
                     style={({ pressed }) => [styles.botonGoogle, pressed && { opacity: 0.8 }]}
@@ -199,11 +218,9 @@ export default function ScreenUserRegister() {
                 >
                     <Text style={styles.textoGoogle}>G  Google</Text>
                 </Pressable>
-
-
             </View>
-        </View>
-    )
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -220,12 +237,6 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         paddingHorizontal: 24,
         paddingVertical: 28,
-    },
-    titulo: {
-        fontFamily: 'Poppins_700Bold',
-        fontSize: 22,
-        color: '#0D2240',
-        marginBottom: 4,
     },
     subtitulo: {
         fontFamily: 'Inter_400Regular',
@@ -250,13 +261,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter_400Regular',
         color: '#333',
         marginBottom: 16,
-    },
-    linkNaranja: {
-        fontFamily: 'Inter_600SemiBold',
-        fontSize: 13,
-        color: '#F97316',
-        textDecorationLine: 'underline',
-        marginBottom: 20,
     },
     botonEntrar: {
         backgroundColor: '#0D2240',
@@ -299,34 +303,25 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#333',
     },
-    filaRegistro: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    textoGris: {
-        fontFamily: 'Inter_400Regular',
-        fontSize: 13,
-        color: '#888',
-    },
     textoInicio: {
         fontFamily: 'Poppins_800ExtraBold',
         fontSize: 26,
         color: '#fff',
-        marginLeft: 7
+        marginLeft: 7,
     },
     textoAlLado: {
         fontFamily: 'Poppins_800ExtraBold',
         fontSize: 26,
         color: '#F97316',
-        marginLeft: 4
+        marginLeft: 4,
     },
     image: {
         width: 90,
         height: 70,
-        marginLeft: 10
+        marginLeft: 10,
     },
     inputContenedor: {
-        flexDirection: 'row',       // ← input y ojito en la misma fila
+        flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#ddd',
@@ -335,7 +330,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     inputSinBorde: {
-        flex: 1,                    // ← ocupa todo el espacio dejando lugar al ojito
+        flex: 1,
         paddingVertical: 12,
         fontSize: 14,
         fontFamily: 'Inter_400Regular',
@@ -346,6 +341,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 10,
         marginBottom: 10,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
     },
-})
+    linkNaranja: {
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 13,
+        color: '#F97316',
+        textDecorationLine: 'underline',
+    },
+});
