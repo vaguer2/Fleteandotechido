@@ -1,8 +1,8 @@
-# Welcome to your Expo app 👋
+# Bienvenido a la documentacion de FleteandoTe 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+El las siguientes lineas encontraras la informacion necesaria para buscar la documentacion correcta de nuestro proyecto.
 
-## Get started
+## Empecemos
 
 1. Install dependencies
 
