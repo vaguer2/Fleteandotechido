@@ -32,6 +32,9 @@ When you're ready, run:
 ```bash
 npm run reset-project
 ```
+```bash
+https://www.figma.com/design/SLv8WVd4g7jCIwpp8enQGW/FleteandoTe-Oficial?node-id=0-1&p=f&t=wXhhtFfz46ibWR8f-0
+```
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
