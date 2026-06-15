@@ -10,7 +10,9 @@ El las siguientes lineas encontraras la informacion necesaria para buscar la doc
 
 3. Cronograma -Documentacion de actividades a realizar: [Cronograma](https://docs.google.com/spreadsheets/d/1TziMw4s953CfEGBPQBZ5zYfZQWw69piP/edit?gid=50450424#gid=50450424)
 
-4. Figma -Link de figma con las el desarrollo UX/UI de las interfaces de la aplicacion: [Figma](https://www.figma.com/design/SLv8WVd4g7jCIwpp8enQGW/FleteandoTe-Oficial?node-id=0-1&t=tDXXjGNHdaj6rA3Q-1) 
+4. Figma -Link de figma con las el desarrollo UX/UI de las interfaces de la aplicacion: [Figma](https://www.figma.com/design/SLv8WVd4g7jCIwpp8enQGW/FleteandoTe-Oficial?node-id=0-1&t=tDXXjGNHdaj6rA3Q-1)
+
+5. Supabase -Link de la base de datos relacional subida en "supabase" para administrar [Base de datos](https://supabase.com/dashboard/project/ntbfnrkppfgttqfruogj) 
 
 # Para instalar las dependencias:
 
