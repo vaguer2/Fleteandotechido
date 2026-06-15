@@ -4,17 +4,11 @@ El las siguientes lineas encontraras la informacion necesaria para buscar la doc
 
 ## Empecemos
 
-1. Drive -Carpeta de documentacion 
+1. Drive -Carpeta de documentacion: [Drive](https://drive.google.com/drive/u/2/folders/1aApKP3fFbPWUux4Px9dTqqRyP7tdzHzD)
 
--[Drive](https://drive.google.com/drive/u/2/folders/1aApKP3fFbPWUux4Px9dTqqRyP7tdzHzD)
+2. Bitacora -Documentacion diaria de actividades: [bitacora](https://docs.google.com/spreadsheets/d/1TziMw4s953CfEGBPQBZ5zYfZQWw69piP/edit?gid=50450424#gid=50450424)
 
-2. Bitacora -Documentacion diaria de actividades
-
-   [bitacora](https://docs.google.com/spreadsheets/d/1TziMw4s953CfEGBPQBZ5zYfZQWw69piP/edit?gid=50450424#gid=50450424)
-
-3. Cronograma -Documentacion de actividades a realizar
-
-   [Cronograma](https://docs.google.com/spreadsheets/d/1TziMw4s953CfEGBPQBZ5zYfZQWw69piP/edit?gid=50450424#gid=50450424)
+3. Cronograma -Documentacion de actividades a realizar: [Cronograma](https://docs.google.com/spreadsheets/d/1TziMw4s953CfEGBPQBZ5zYfZQWw69piP/edit?gid=50450424#gid=50450424)
 
 # Para instalar las dependencias:
 
