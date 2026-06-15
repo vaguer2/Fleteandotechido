@@ -2,7 +2,7 @@
 
 El las siguientes lineas encontraras la informacion necesaria para buscar la documentacion correcta de nuestro proyecto.
 
-## Empecemos
+## Links principales:
 
 1. Drive -Carpeta de documentacion: [Drive](https://drive.google.com/drive/u/2/folders/1aApKP3fFbPWUux4Px9dTqqRyP7tdzHzD)
 
