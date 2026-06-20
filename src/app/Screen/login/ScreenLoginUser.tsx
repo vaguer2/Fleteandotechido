@@ -139,7 +139,7 @@ export default function ScreenLoginUser() {
 
                 <View style={styles.filaRegistro}>
                     <Text style={styles.textoGris}>¿No tienes cuenta? </Text>
-                    <Pressable onPress={() => router.push('/Screen/register/ScreenUserRegister')}>
+                    <Pressable onPress={() => router.push('./Screen/Register/ScreenUserRegister')}>  {/*Aqui cambie*/}
                         <Text style={styles.linkNaranja}>Regístrate gratis</Text>
                     </Pressable>
                 </View>
