@@ -46,14 +46,14 @@ return (
       <Pressable style={({ pressed }) => [
         styles.botonNaranja,
         pressed && styles.botonPresionado
-      ]} onPress={() => router.push('./Screen/Login/ScreenLoginUser')}> {/*aqui cambie*/}
+      ]} onPress={() => router.push('/Screen/Login/ScreenLoginUser')}> 
         <Text style={styles.colorBotonTexto}>Solicitar flete ahora</Text>
       </Pressable>
 
       <Pressable style={({ pressed }) => [
         styles.botonBorde,
         pressed && styles.botonBordePresionado
-      ]} onPress={() => router.push('./Screen/Login/ScreenLoginFletero')}> {/*aqui cambie*/}
+      ]} onPress={() => router.push('/Screen/Login/ScreenLoginFletero')}> 
         <Text style={styles.colorBotonTexto}>Soy transportista</Text>
       </Pressable>
     </View>

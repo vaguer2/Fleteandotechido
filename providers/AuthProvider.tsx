@@ -69,11 +69,11 @@ export default function AuthProvider(props: Props) {
                     } else {
                         // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('./Screen/Login/ScreenStart');  //aqui cambie
+                        router.replace('/Screen/Login/ScreenStart');  //aqui cambie
                     }
                 }
             } else {
-                router.replace('./Screen/Login/ScreenStart');  // aqui cambie
+                router.replace('/Screen/Login/ScreenStart');  // aqui cambie
             }
 
             setLoading(false);
@@ -111,14 +111,14 @@ export default function AuthProvider(props: Props) {
                     } else {
                         // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('./Screen/Login/ScreenStart'); //aqui cambie
+                        router.replace('/Screen/Login/ScreenStart'); //aqui cambie
                     }
                 }
             } else {
                 setLogin(false);
                 setUsuario(null);
                 setEsTransportista(false);
-                router.replace('./Screen/Login/ScreenStart'); //aqui cambie
+                router.replace('/Screen/Login/ScreenStart'); //aqui cambie
             }
         });
 

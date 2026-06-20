@@ -91,7 +91,7 @@ export default function ScreenFleteroRegister() {
                 Alert.alert(
                     'Registro exitoso',
                     'Tu cuenta fue creada. Completa los datos de tu vehículo al iniciar sesión.',
-                    [{ text: 'OK', onPress: () => router.replace('./Screen/Login/ScreenLoginFletero') }] //aqui cambie
+                    [{ text: 'OK', onPress: () => router.replace('/Screen/Login/ScreenLoginFletero') }] //aqui cambie
                 );
             }, 300);
 

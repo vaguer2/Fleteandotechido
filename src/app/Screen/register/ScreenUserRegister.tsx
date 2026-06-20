@@ -99,7 +99,7 @@ export default function ScreenUserRegister() {
                 Alert.alert(
                     'Registro exitoso',
                     'Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.',
-                    [{ text: 'OK', onPress: () => router.replace('./Screen/Login/ScreenLoginUser') }] //aqui cambie
+                    [{ text: 'OK', onPress: () => router.replace('/Screen/Login/ScreenLoginUser') }] //aqui cambie
                 );
             }, 300);
 
