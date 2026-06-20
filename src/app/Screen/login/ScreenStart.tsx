@@ -1,9 +1,12 @@
+import React from 'react'
+import { useRouter } from 'expo-router'; //aqui importamos el expo router para poder hacer las diferentes navegaciones dependendiendo la pagina a la que queramos ingresar
+
 import { Dimensions, StyleSheet, Text, View, Pressable } from 'react-native'
 import { useFonts, Poppins_800ExtraBold } from '@expo-google-fonts/poppins';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
-import React from 'react'
 const { width, height } = Dimensions.get('window');
 export default function ScreenStart() {
+  const router = useRouter();
   //------------------------------------------------------------------------
   //estos dos son para que mi aplicacion cargue el texto de poppins
   const [fontsLoaded] = useFonts({
@@ -43,14 +46,14 @@ return (
       <Pressable style={({ pressed }) => [
         styles.botonNaranja,
         pressed && styles.botonPresionado
-      ]} onPress={() => console.log('Solicitar Flete')}>
+      ]} onPress={() => router.push('/Screen/Login/ScreenLoginUser')}>
         <Text style={styles.colorBotonTexto}>Solicitar flete ahora</Text>
       </Pressable>
 
       <Pressable style={({ pressed }) => [
         styles.botonBorde,
         pressed && styles.botonBordePresionado
-      ]} onPress={() => console.log('Soy transportista')}>
+      ]} onPress={() => router.push('/Screen/Login/ScreenLoginFletero')}>
         <Text style={styles.colorBotonTexto}>Soy transportista</Text>
       </Pressable>
     </View>

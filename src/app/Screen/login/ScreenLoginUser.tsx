@@ -2,11 +2,15 @@ import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google
 import { Poppins_700Bold, Poppins_800ExtraBold, useFonts } from '@expo-google-fonts/poppins';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Dimensions, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Dimensions, Image, Pressable, StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '../../../../lib/supabase';
+import { ScrollView } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export default function ScreenLoginUser() {
-    const logoFleteandote = require('../../assets/logo.png')
+    const logoFleteandote = require('../../assets/logo.png');
+    const router = useRouter();
 
     const [mail, setMail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,16 +23,48 @@ export default function ScreenLoginUser() {
         Inter_700Bold,
         Poppins_700Bold,
         Poppins_800ExtraBold,
-
     });
 
     if (!fontsLoaded) return null;
 
+    const iniciarSesion = async () => {
+        const cleanEmail = mail.trim();
+
+        if (!cleanEmail || !password) {
+            Alert.alert('Campos incompletos', 'Completa todos los campos para continuar.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email: cleanEmail,
+                password: password,
+            });
+
+            if (error) {
+                Alert.alert('Error al iniciar sesión', error.message);
+                return;
+            }
+            // El AuthProvider detecta el cambio de sesión automaticamente
+            // y redirige a ScreenHomeUser
+
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Intenta nuevamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <View style={styles.fondo}>
+        <ScrollView
+            style={{ flex: 1, backgroundColor: '#0D2240' }}
+            contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}
+            keyboardShouldPersistTaps="handled"
+        >
+        
             <View>
                 <Image
-                    //source={require('../../assets/logo.png')}   <-- esta es otra forma de llamar a nuestra imagen
                     source={logoFleteandote}
                     style={styles.image}
                     resizeMode="contain"
@@ -39,41 +75,29 @@ export default function ScreenLoginUser() {
                 <Text style={styles.textoAlLado}>Te</Text>
             </View>
 
-            {/* ── Tarjeta blanca ── */}
             <View style={styles.cuadroInputs}>
-
-                {/* Título */}
                 <Text style={styles.titulo}>¡Bienvenido de vuelta!</Text>
                 <Text style={styles.subtitulo}>Ingresa para continuar con tu cuenta</Text>
 
-                {/* Campo correo */}
                 <Text style={styles.etiqueta}>Correo electrónico</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="ejemplo@gmail.com"
                     placeholderTextColor="#aaa"
                     value={mail}
-                    onChangeText={(texto) => {
-                        setMail(texto);
-                        console.log(texto)
-                    }}
+                    onChangeText={setMail}
                     keyboardType="email-address"
                     autoCapitalize="none"
                 />
 
-                {/* Campo contraseña */}
                 <Text style={styles.etiqueta}>Contraseña</Text>
-
                 <View style={styles.inputContenedor}>
                     <TextInput
                         style={styles.inputSinBorde}
                         placeholder="Escribe acá tu contraseña"
                         placeholderTextColor="#aaa"
                         value={password}
-                        onChangeText={(pass) => {
-                            setPassword(pass);
-                            console.log(pass);
-                        }}
+                        onChangeText={setPassword}
                         secureTextEntry={!verPass}
                     />
                     <Pressable onPress={() => setVerPass(!verPass)}>
@@ -85,29 +109,26 @@ export default function ScreenLoginUser() {
                     </Pressable>
                 </View>
 
-
-
-
                 <Pressable onPress={() => console.log('recuperando...')}>
                     <Text style={styles.linkNaranja}>¿Olvidaste tu contraseña?</Text>
                 </Pressable>
 
-                {/* Botón Entrar */}
                 <Pressable
                     style={({ pressed }) => [styles.botonEntrar, pressed && { opacity: 0.8 }]}
-                    onPress={() => console.log('entrando...')}
+                    onPress={iniciarSesion}
+                    disabled={loading}
                 >
-                    <Text style={styles.textoBotonEntrar}>Entrar</Text>
+                    {loading
+                        ? <ActivityIndicator color="#fff" />
+                        : <Text style={styles.textoBotonEntrar}>Entrar</Text>
+                    }
                 </Pressable>
 
-                {/* Divider */}
                 <View style={styles.divider}>
                     <View style={styles.linea} />
                     <Text style={styles.textoDivider}>o continúa con</Text>
                     <View style={styles.linea} />
                 </View>
-
-
 
                 <Pressable
                     style={({ pressed }) => [styles.botonGoogle, pressed && { opacity: 0.8 }]}
@@ -116,17 +137,15 @@ export default function ScreenLoginUser() {
                     <Text style={styles.textoGoogle}>G  Google</Text>
                 </Pressable>
 
-                {/* Link registro */}
                 <View style={styles.filaRegistro}>
                     <Text style={styles.textoGris}>¿No tienes cuenta? </Text>
-                    <Pressable onPress={() => console.log('registrandose...')}>
+                    <Pressable onPress={() => router.push('/Screen/register/ScreenUserRegister')}>
                         <Text style={styles.linkNaranja}>Regístrate gratis</Text>
                     </Pressable>
                 </View>
-
             </View>
-        </View>
-    )
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -235,20 +254,20 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins_800ExtraBold',
         fontSize: 26,
         color: '#fff',
-        marginLeft: 7
+        marginLeft: 7,
     },
     textoAlLado: {
         fontFamily: 'Poppins_800ExtraBold',
         fontSize: 26,
         color: '#F97316',
-        marginLeft: 4
+        marginLeft: 4,
     },
     image: {
         width: 100,
-        height: 80
+        height: 80,
     },
     inputContenedor: {
-        flexDirection: 'row',       // ← input y ojito en la misma fila
+        flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#ddd',
@@ -257,10 +276,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     inputSinBorde: {
-        flex: 1,                    // ← ocupa todo el espacio dejando lugar al ojito
+        flex: 1,
         paddingVertical: 12,
         fontSize: 14,
         fontFamily: 'Inter_400Regular',
         color: '#333',
     },
-})
+});
