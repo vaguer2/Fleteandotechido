@@ -30,102 +30,103 @@ interface Props {
 }
 
 export default function AuthProvider(props: Props) {
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(false);   
     const [session, setSession] = useState<Session | null>(null);
     const [usuario, setUsuario] = useState<any>(null);
     const [esTransportista, setEsTransportista] = useState<boolean>(false);
-    const [login, setLogin] = useState<boolean>(false);
+    const [login, setLogin] = useState<boolean>(true); //aqui lo cambio a true para quitar el login que viene por defecto (necesito cambiarlo de nuevo a false si quiero el inicio de sesion)
 
-    useEffect(() => {
-        async function fetchSession() {
-            const { error, data } = await supabase.auth.getSession();
+    // useEffect(() => {
+        
+    //     async function fetchSession() {
+    //         const { error, data } = await supabase.auth.getSession();
 
-            if (error) throw error;
+    //         if (error) throw error;
 
-            if (data.session) {
-                setSession(data.session);
-                setLogin(true);
+    //         if (data.session) {
+    //             setSession(data.session);
+    //             setLogin(true);
 
-                const { data: usuarioData } = await supabase
-                    .from('usuario')
-                    .select('*')
-                    .eq('usuario_id', data.session.user.id)
-                    .single();
+    //             const { data: usuarioData } = await supabase
+    //                 .from('usuario')
+    //                 .select('*')
+    //                 .eq('usuario_id', data.session.user.id)
+    //                 .single();
 
-                if (usuarioData) {
-                    setUsuario(usuarioData);
-                    router.replace('/Screen/Home/ScreenHomeUser');
-                } else {
-                    const { data: fleteroData } = await supabase
-                        .from('fletero')
-                        .select('*')
-                        .eq('fletero_id', data.session.user.id)
-                        .single();
+    //             if (usuarioData) {
+    //                 setUsuario(usuarioData);
+    //                 router.replace('/Screen/Home/ScreenHomeUser');
+    //             } else {
+    //                 const { data: fleteroData } = await supabase
+    //                     .from('fletero')
+    //                     .select('*')
+    //                     .eq('fletero_id', data.session.user.id)
+    //                     .single();
 
-                    if (fleteroData) {
-                        setUsuario(fleteroData);
-                        setEsTransportista(true);
-                        router.replace('/Screen/Home/ScreenHomeFletero' as any);
-                    } else {
-                        // No existe en ninguna tabla, cerrar sesión
-                        await supabase.auth.signOut();
-                        router.replace('/Screen/Login/ScreenStart');  //aqui cambie
-                    }
-                }
-            } else {
-                router.replace('/Screen/Login/ScreenStart');  // aqui cambie
-            }
+    //                 if (fleteroData) {
+    //                     setUsuario(fleteroData);
+    //                     setEsTransportista(true);
+    //                     router.replace('/Screen/Home/ScreenHomeFletero' as any);
+    //                 } else {
+    //                     // No existe en ninguna tabla, cerrar sesión
+    //                     await supabase.auth.signOut();
+    //                     router.replace('/Screen/Login/ScreenStart');  //aqui cambie
+    //                 }
+    //             }
+    //         } else {
+    //             router.replace('/Screen/Login/ScreenStart');  // aqui cambie
+    //         }
 
-            setLoading(false);
-        }
+    //         setLoading(false);
+    //     }
 
-        fetchSession();
+    //     fetchSession();
 
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (_, session) => {
-            setSession(session);
-            setLoading(false);
+    //     const { data: authListener } = supabase.auth.onAuthStateChange(async (_, session) => {
+    //         setSession(session);
+    //         setLoading(false);
 
-            if (session) {
-                setLogin(true);
+    //         if (session) {
+    //             setLogin(true);
 
-                const { data: usuarioData } = await supabase
-                    .from('usuario')
-                    .select('*')
-                    .eq('usuario_id', session.user.id)
-                    .single();
+    //             const { data: usuarioData } = await supabase
+    //                 .from('usuario')
+    //                 .select('*')
+    //                 .eq('usuario_id', session.user.id)
+    //                 .single();
 
-                if (usuarioData) {
-                    setUsuario(usuarioData);
-                    router.replace('/Screen/Home/ScreenHomeUser');
-                } else {
-                    const { data: fleteroData } = await supabase
-                        .from('fletero')
-                        .select('*')
-                        .eq('fletero_id', session.user.id)
-                        .single();
+    //             if (usuarioData) {
+    //                 setUsuario(usuarioData);
+    //                 router.replace('/Screen/Home/ScreenHomeUser');
+    //             } else {
+    //                 const { data: fleteroData } = await supabase
+    //                     .from('fletero')
+    //                     .select('*')
+    //                     .eq('fletero_id', session.user.id)
+    //                     .single();
 
-                    if (fleteroData) {
-                        setUsuario(fleteroData);
-                        setEsTransportista(true);
-                        router.replace('/Screen/Home/ScreenHomeFletero' as any);
-                    } else {
-                        // No existe en ninguna tabla, cerrar sesión
-                        await supabase.auth.signOut();
-                        router.replace('/Screen/Login/ScreenStart'); //aqui cambie
-                    }
-                }
-            } else {
-                setLogin(false);
-                setUsuario(null);
-                setEsTransportista(false);
-                router.replace('/Screen/Login/ScreenStart'); //aqui cambie
-            }
-        });
+    //                 if (fleteroData) {
+    //                     setUsuario(fleteroData);
+    //                     setEsTransportista(true);
+    //                     router.replace('/Screen/Home/ScreenHomeFletero' as any);
+    //                 } else {
+    //                     // No existe en ninguna tabla, cerrar sesión
+    //                     await supabase.auth.signOut();
+    //                     router.replace('/Screen/Login/ScreenStart'); //aqui cambie
+    //                 }
+    //             }
+    //         } else {
+    //             setLogin(false);
+    //             setUsuario(null);
+    //             setEsTransportista(false);
+    //             router.replace('/Screen/Login/ScreenStart'); //aqui cambie
+    //         }
+    //     });
 
-        return () => {
-            authListener?.subscription.unsubscribe();
-        };
-    }, []);
+    //     return () => {
+    //         authListener?.subscription.unsubscribe();
+    //     };
+    // }, []);
 
     return (
         <AuthContext.Provider value={{

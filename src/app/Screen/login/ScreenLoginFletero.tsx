@@ -136,7 +136,7 @@ export default function ScreenLoginFletero() {
 
                 <View style={styles.filaRegistro}>
                     <Text style={styles.textoGris}>¿No tienes cuenta? </Text>
-                    <Pressable onPress={() => router.push('/Screen/Register/ScreenFleteroRegister')}> 
+                    <Pressable onPress={() => router.push('/Screen/Register/ScreenFleteroRegister')}>
                         <Text style={styles.linkNaranja}>Regístrate gratis</Text>
                     </Pressable>
                 </View>
