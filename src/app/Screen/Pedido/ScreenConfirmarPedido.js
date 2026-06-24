@@ -1,18 +1,84 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../../../../lib/supabase';
 
 export default function ScreenConfirmarPedido() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const solicitudId = params.solicitudId;
 
-  // TODO: reemplazar con datos de la base de datos
-  const pedido = {
+  const [pedido, setPedido] = useState({
     folio: '',
     transportista: '',
-    estrellas: '',
+    estrellas: 0,
     placa: '',
     tiempoEstimado: '',
     total: '',
-  };
+    distancia: '',
+    origen: '',
+    destino: '',
+  });
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    async function confirmarYCargarPedido() {
+      if (!solicitudId) {
+        setCargando(false);
+        return;
+      }
+
+      // 1. AQUÍ es donde realmente se "publica" la solicitud
+      const { error: errorUpdate } = await supabase
+        .from('solicitud')
+        .update({ estado: 'publicada' })
+        .eq('solicitud_id', solicitudId);
+
+      if (errorUpdate) {
+        console.log('Error al publicar la solicitud:', errorUpdate);
+      }
+
+      // 2. Traer los datos completos del pedido, incluyendo fletero y puntos de ruta
+      const { data: solicitud, error: errorSolicitud } = await supabase
+        .from('solicitud')
+        .select('*, fletero(*), punto_ruta(*)')
+        .eq('solicitud_id', solicitudId)
+        .single();
+
+      if (errorSolicitud || !solicitud) {
+        console.log('Error al traer la solicitud:', errorSolicitud);
+        setCargando(false);
+        return;
+      }
+
+      const puntoOrigen = solicitud.punto_ruta.find((p) => p.tipo === 'origen');
+      const puntoDestino = solicitud.punto_ruta.find((p) => p.tipo === 'destino');
+
+      setPedido({
+        folio: `FLT-${String(solicitud.solicitud_id).padStart(5, '0')}`,
+        transportista: solicitud.fletero?.nombre ?? 'Sin asignar',
+        estrellas: Math.round(solicitud.fletero?.calificacion_promedio ?? 0),
+        placa: solicitud.fletero?.placa_vehiculo ?? '—',
+        tiempoEstimado: '20-30 min',
+        total: solicitud.precio_base ? `$${solicitud.precio_base}` : '—',
+        distancia: solicitud.distancia_km ? `${solicitud.distancia_km.toFixed(1)} km` : '—',
+        origen: puntoOrigen?.direccion_texto ?? 'No definido',
+        destino: puntoDestino?.direccion_texto ?? 'No definido',
+      });
+
+      setCargando(false);
+    }
+
+    confirmarYCargarPedido();
+  }, [solicitudId]);
+
+  if (cargando) {
+    return (
+      <View style={styles.centrado}>
+        <ActivityIndicator color="#F97316" size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -36,6 +102,18 @@ export default function ScreenConfirmarPedido() {
       {/* Detalle */}
       <View style={styles.card}>
         <View style={styles.fila}>
+          <Text style={styles.filaLabel}>Origen</Text>
+          <Text style={styles.filaValor} numberOfLines={1}>{pedido.origen}</Text>
+        </View>
+        <View style={styles.fila}>
+          <Text style={styles.filaLabel}>Destino</Text>
+          <Text style={styles.filaValor} numberOfLines={1}>{pedido.destino}</Text>
+        </View>
+        <View style={styles.fila}>
+          <Text style={styles.filaLabel}>Distancia</Text>
+          <Text style={styles.filaValor}>{pedido.distancia}</Text>
+        </View>
+        <View style={styles.fila}>
           <Text style={styles.filaLabel}>Transportista</Text>
           <Text style={styles.filaValor}>
             {pedido.transportista} ⭐ {pedido.estrellas}
@@ -56,7 +134,14 @@ export default function ScreenConfirmarPedido() {
       </View>
 
       {/* Botones */}
-      <TouchableOpacity style={styles.botonPrimario} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={styles.botonPrimario}
+        activeOpacity={0.85}
+        onPress={() => router.push({
+          pathname: '/Screen/Map/ScreenMapSuccess',
+          params: { solicitudId },
+        })}
+      >
         <Text style={styles.botonPrimarioTexto}>Ver en el mapa</Text>
       </TouchableOpacity>
 
@@ -80,8 +165,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Check
+  centrado: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   checkWrapper: {
     width: 72,
     height: 72,
@@ -96,8 +185,6 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontWeight: '700',
   },
-
-  // Título
   titulo: {
     fontSize: 24,
     fontWeight: '700',
@@ -112,8 +199,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 16,
   },
-
-  // Folio
   folio: {
     fontSize: 14,
     color: '#64748B',
@@ -123,8 +208,6 @@ const styles = StyleSheet.create({
     color: '#F97316',
     fontWeight: '700',
   },
-
-  // Card detalle
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -151,13 +234,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#0F172A',
+    maxWidth: '60%',
+    textAlign: 'right',
   },
   filaTotal: {
     color: '#F97316',
     fontSize: 15,
   },
-
-  // Botones
   botonPrimario: {
     backgroundColor: '#0F172A',
     borderRadius: 14,
