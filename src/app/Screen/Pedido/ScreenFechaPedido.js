@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
 
-const PASOS = ['Ruta', 'Carga', 'Fecha', 'Confirmar'];
+const PASOS = ['Carga', 'Ruta', 'Fecha', 'Confirmar'];
 
 const ZONAS_REFERENCIA = [
     { zona_id: 1, latitud: 20.6296, longitud: -87.0739 },
@@ -18,8 +18,6 @@ export default function ScreenFechaPedido() {
     const params = useLocalSearchParams();
     const solicitudId = params.solicitudId;
 
-    const [transportistaSeleccionado, setTransportistaSeleccionado] = useState(null);
-    const [transportistas, setTransportistas] = useState([]);
     const [resumen, setResumen] = useState({
         origen: '',
         destino: '',
@@ -29,9 +27,11 @@ export default function ScreenFechaPedido() {
         tiempoEst: '',
     });
     const [precioCalculado, setPrecioCalculado] = useState(null);
+    const [depositoCalculado, setDepositoCalculado] = useState(null);
     const [tabuladorId, setTabuladorId] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [guardando, setGuardando] = useState(false);
+    const [sinTabulador, setSinTabulador] = useState(false);
 
     const distanciaEntrePuntos = (lat1, lon1, lat2, lon2) => {
         const dLat = lat1 - lat2;
@@ -57,8 +57,6 @@ export default function ScreenFechaPedido() {
         return zonaMasCercana.zona_id;
     };
 
-    // Calcula el tiempo estimado de viaje basado en la distancia real
-    // Asume velocidad promedio urbana de 30 km/h + 30 min de margen
     const calcularTiempoEstimado = (distanciaKm) => {
         if (!distanciaKm) return '20-30 min';
 
@@ -70,7 +68,6 @@ export default function ScreenFechaPedido() {
         return `${tiempoMinimo}-${tiempoMaximo} min`;
     };
 
-    // Formatea la fecha de hoy en español
     const obtenerFechaHoy = () => {
         const hoy = new Date();
         const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
@@ -83,8 +80,6 @@ export default function ScreenFechaPedido() {
                 setCargando(false);
                 return;
             }
-            console.log('solicitudId recibido:', solicitudId);
-            console.log('Tipo de dato:', typeof solicitudId);
 
             const { data: solicitud, error: errorSolicitud } = await supabase
                 .from('solicitud')
@@ -97,8 +92,6 @@ export default function ScreenFechaPedido() {
                 setCargando(false);
                 return;
             }
-            console.log('Solicitud completa:', JSON.stringify(solicitud));
-            console.log('Tonelaje requerido de la solicitud cargada:', solicitud.tonelaje_requerido);
 
             const puntoOrigen = solicitud.punto_ruta.find((p) => p.tipo === 'origen');
             const puntoDestino = solicitud.punto_ruta.find((p) => p.tipo === 'destino');
@@ -110,22 +103,32 @@ export default function ScreenFechaPedido() {
                     puntoOrigen.longitud
                 );
 
+                console.log('Zona detectada:', zonaDetectada);
+                console.log('Tonelaje requerido (raw):', solicitud.tonelaje_requerido);
+                console.log('Tonelaje requerido (Number):', Number(solicitud.tonelaje_requerido));
+
                 const { data: tabulador, error: errorTabulador } = await supabase
                     .from('tabulador_precio')
                     .select('*')
                     .eq('zona_id', zonaDetectada)
                     .lte('tonelaje_min', solicitud.tonelaje_requerido)
-                    .gte('tonelaje_max', solicitud.tonelaje_requerido)
+                    .gt('tonelaje_max', solicitud.tonelaje_requerido)  // ← cambié gte por gt
                     .single();
+
+                console.log('Tabulador encontrado:', tabulador);
+                console.log('Error tabulador:', errorTabulador);
 
                 if (!errorTabulador && tabulador) {
                     tabuladorEncontrado = tabulador;
                     setPrecioCalculado(tabulador.precio_base);
+                    setDepositoCalculado(Math.round(tabulador.precio_base * 0.25));
                     setTabuladorId(tabulador.tabulador_id);
+                    setSinTabulador(false);
+                } else {
+                    setSinTabulador(true);
                 }
             }
 
-            // Armar el resumen visual con todos los datos reales
             setResumen({
                 origen: puntoOrigen?.direccion_texto ?? 'Ubicación actual',
                 destino: puntoDestino?.direccion_texto ?? 'No definido',
@@ -135,69 +138,34 @@ export default function ScreenFechaPedido() {
                 tiempoEst: calcularTiempoEstimado(solicitud.distancia_km),
             });
 
-            // Buscar fleteros REALMENTE disponibles, verificados (sin filtro de tonelaje en la query)
-            const { data: fleterosTodos, error: errorFleteros } = await supabase
-                .from('fletero')
-                .select('*')
-                .eq('disponible', true)
-                .eq('verificado', true)
-                .eq('activo', true);
-
-            console.log('Fleteros sin filtro de tonelaje:', fleterosTodos);
-            console.log('Error fleteros:', errorFleteros);
-
-            const tonelajeNecesario = Number(solicitud.tonelaje_requerido);
-            const fleteros = fleterosTodos?.filter((f) => Number(f.tonelaje) >= tonelajeNecesario);
-
-            console.log('Fleteros después de filtrar tonelaje en JS:', fleteros);
-
-            if (!errorFleteros && fleteros) {
-                const fleterosFormateados = fleteros.map((f) => ({
-                    id: f.fletero_id,
-                    nombre: f.nombre,
-                    iniciales: f.nombre.charAt(0).toUpperCase(),
-                    color: '#0A2348',
-                    estrellas: Math.round(f.calificacion_promedio || 0),
-                    vehiculo: f.tipo_vehiculo,
-                    llegaEn: calcularTiempoEstimado(solicitud.distancia_km).split('-')[0] + ' min',
-                    precio: tabuladorEncontrado ? tabuladorEncontrado.precio_base : 0,
-                    etiqueta: 'Precio del tabulador',
-                }));
-                setTransportistas(fleterosFormateados);
-            }
-
             setCargando(false);
         }
 
         cargarDatosSolicitud();
     }, [solicitudId]);
 
-    const renderEstrellas = (cantidad = 0) =>
-        '★'.repeat(cantidad) + '☆'.repeat(5 - cantidad);
-
-    const confirmarTransportista = async () => {
-        if (!transportistaSeleccionado || !solicitudId) return;
+    const confirmarPrecio = async () => {
+        if (!solicitudId || !precioCalculado) return;
 
         setGuardando(true);
         try {
             const { error } = await supabase
                 .from('solicitud')
                 .update({
-                    fletero_id: transportistaSeleccionado,
                     precio_base: precioCalculado,
+                    deposito_requerido: depositoCalculado,
                     tabulador_id: tabuladorId,
-                    hora_inicio: new Date().toISOString(),
                 })
                 .eq('solicitud_id', solicitudId);
 
             if (error) {
                 console.log('Error al actualizar solicitud:', error);
-                Alert.alert('Error', 'No se pudo asignar el transportista. Intenta de nuevo.');
+                Alert.alert('Error', 'No se pudo guardar el precio. Intenta de nuevo.');
                 return;
             }
 
             router.push({
-                pathname: 'Screen/Pedido/ScreenConfirmarPedido',
+                pathname: '/Screen/Pedido/ScreenConfirmarPedido',
                 params: { solicitudId },
             });
 
@@ -213,7 +181,7 @@ export default function ScreenFechaPedido() {
         return (
             <View style={styles.centrado}>
                 <ActivityIndicator color="#F97316" size="large" />
-                <Text style={styles.textoCargando}>Buscando transportistas...</Text>
+                <Text style={styles.textoCargando}>Calculando tu cotización...</Text>
             </View>
         );
     }
@@ -256,8 +224,8 @@ export default function ScreenFechaPedido() {
                 })}
             </View>
 
-            <Text style={styles.titulo}>Elige tu transportista</Text>
-            <Text style={styles.subtitulo}>{transportistas.length} opciones disponibles</Text>
+            <Text style={styles.titulo}>Cotización de tu flete</Text>
+            <Text style={styles.subtitulo}>Precio calculado según tu zona y tonelaje</Text>
 
             <View style={styles.card}>
                 <View style={styles.rutaRow}>
@@ -290,51 +258,46 @@ export default function ScreenFechaPedido() {
                 </View>
             </View>
 
-            {transportistas.length === 0 && (
+            {sinTabulador ? (
                 <View style={styles.sinTransportistas}>
                     <Text style={styles.sinTransportistasTexto}>
-                        No hay transportistas disponibles para tu zona y tonelaje en este momento.
+                        No hay tarifa configurada para tu zona y tonelaje. Contacta a soporte.
+                    </Text>
+                </View>
+            ) : (
+                <View style={styles.cardPrecio}>
+                    <Text style={styles.labelPrecio}>Precio estimado</Text>
+                    <Text style={styles.montoPrecio}>${precioCalculado?.toLocaleString('es-MX')} MXN</Text>
+
+                    <View style={styles.separator} />
+
+                    <View style={styles.filaDeposito}>
+                        <Text style={styles.labelDeposito}>Depósito previo (25%)</Text>
+                        <Text style={styles.montoDeposito}>${depositoCalculado?.toLocaleString('es-MX')} MXN</Text>
+                    </View>
+                    <Text style={styles.notaDeposito}>
+                        Se cobra al confirmar. Garantiza tu servicio ante el fletero que acepte tu solicitud.
                     </Text>
                 </View>
             )}
 
-            {transportistas.map((t) => {
-                const seleccionado = transportistaSeleccionado === t.id;
-                return (
-                    <TouchableOpacity key={t.id} style={[styles.cardTransportista, seleccionado && styles.cardSeleccionado]}
-                        onPress={() => setTransportistaSeleccionado(t.id)}
-                        activeOpacity={0.85}
-                    >
-                        <View style={[styles.avatar, { backgroundColor: t.color }]}>
-                            <Text style={styles.avatarText}>{t.iniciales}</Text>
-                        </View>
-                        <View style={styles.transportistaInfo}>
-                            <Text style={styles.transportistaNombre}>{t.nombre}</Text>
-                            <Text style={[styles.estrellas, { color: '#F97316' }]}>
-                                {renderEstrellas(t.estrellas)}
-                            </Text>
-                            <Text style={styles.transportistaDetalle}>
-                                {t.vehiculo} • Llega en {t.llegaEn}
-                            </Text>
-                        </View>
-                        <View style={styles.precioBox}>
-                            <Text style={styles.precio}>${t.precio}</Text>
-                            <Text style={styles.etiqueta}>{t.etiqueta}</Text>
-                        </View>
-                    </TouchableOpacity>
-                );
-            })}
+            <View style={styles.cardInfo}>
+                <Text style={styles.infoTextoTitulo}>¿Cómo funciona ahora?</Text>
+                <Text style={styles.infoTexto}>
+                    Al confirmar, tu solicitud se publicará para que los fleteros disponibles en tu zona puedan verla y aceptarla. Te notificaremos en cuanto alguien la tome.
+                </Text>
+            </View>
 
             <TouchableOpacity
-                style={[styles.boton, (!transportistaSeleccionado || guardando) && styles.botonDeshabilitado]}
-                onPress={confirmarTransportista}
-                disabled={!transportistaSeleccionado || guardando}
+                style={[styles.boton, (!precioCalculado || guardando || sinTabulador) && styles.botonDeshabilitado]}
+                onPress={confirmarPrecio}
+                disabled={!precioCalculado || guardando || sinTabulador}
                 activeOpacity={0.85}
             >
                 {guardando ? (
                     <ActivityIndicator color="#fff" />
                 ) : (
-                    <Text style={styles.botonTexto}>Confirmar transportista</Text>
+                    <Text style={styles.botonTexto}>Continuar</Text>
                 )}
             </TouchableOpacity>
 
@@ -378,22 +341,23 @@ const styles = StyleSheet.create({
     infoValor: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
     sinTransportistas: { backgroundColor: '#FFF4EA', borderRadius: 12, padding: 16, marginBottom: 12 },
     sinTransportistasTexto: { fontSize: 13, color: '#92400E', textAlign: 'center' },
-    cardTransportista: {
-        backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, marginBottom: 10,
-        flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: 'transparent',
-        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 }, elevation: 1,
+
+    cardPrecio: {
+        backgroundColor: '#0F172A', borderRadius: 16, padding: 20, marginBottom: 16,
     },
-    cardSeleccionado: { borderColor: '#F97316' },
-    avatar: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-    avatarText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-    transportistaInfo: { flex: 1 },
-    transportistaNombre: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
-    estrellas: { fontSize: 12, marginVertical: 2 },
-    transportistaDetalle: { fontSize: 12, color: '#64748B' },
-    precioBox: { alignItems: 'flex-end' },
-    precio: { fontSize: 20, fontWeight: '700', color: '#0F172A' },
-    etiqueta: { fontSize: 11, color: '#64748B', marginTop: 2 },
+    labelPrecio: { fontSize: 13, color: '#94A3B8', marginBottom: 4 },
+    montoPrecio: { fontSize: 32, fontWeight: '700', color: '#FFFFFF' },
+    filaDeposito: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    labelDeposito: { fontSize: 13, color: '#CBD5E1' },
+    montoDeposito: { fontSize: 16, fontWeight: '700', color: '#F97316' },
+    notaDeposito: { fontSize: 11, color: '#94A3B8', lineHeight: 16 },
+
+    cardInfo: {
+        backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginBottom: 16,
+    },
+    infoTextoTitulo: { fontSize: 13, fontWeight: '700', color: '#1D4ED8', marginBottom: 4 },
+    infoTexto: { fontSize: 12, color: '#1E40AF', lineHeight: 17 },
+
     boton: { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
     botonDeshabilitado: { backgroundColor: '#94A3B8' },
     botonTexto: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },

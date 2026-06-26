@@ -1,58 +1,37 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  StatusBar,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-// ajusta esta ruta a la real
-import { useAuth } from '../../../../providers/AuthProvider'; // ajusta esta ruta a la real
-
-// ---------------------------------------------------------------
-// ⚠️ AJUSTA ESTO a tu esquema real de Supabase:
-//
-// TABLA_SOLICITUDES: nombre de tu tabla de solicitudes/pedidos
-// Columnas esperadas (cambia los nombres si difieren):
-//   id              -> identificador
-//   categoria       -> 'Muebles' | 'Materiales' | etc.
-//   titulo          -> ej. 'Sofá + librero'
-//   origen          -> ej. 'Playa del Carmen'
-//   destino         -> ej. 'Puerto Morelos'
-//   peso_ton        -> ej. 1.2
-//   distancia_km    -> ej. 18
-//   precio_base     -> ej. 520
-//   estado          -> ej. 'disponible' (filtrar solo las abiertas)
-//   created_at      -> fecha de creación (para "Hace X min")
-//
-// TABLA_FLETERO: tu tabla 'fletero', para guardar el toggle de
-// disponibilidad (columna 'disponible' boolean, ajusta si difiere)
-// ---------------------------------------------------------------
-
-const TABLA_SOLICITUDES = 'solicitudes'; // 👈 cambia por el nombre real
-const TABLA_FLETERO = 'fletero'; // 👈 cambia por el nombre real
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../../../lib/supabase';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 type Solicitud = {
-  id: string;
-  categoria: string;
-  titulo: string;
-  origen: string;
-  destino: string;
-  peso_ton: number;
-  distancia_km: number;
-  precio_base: number;
-  created_at: string;
+  solicitud_id: number;
+  categoria_carga: { nombre: string } | null;
+  descripcion_carga: string;
+  tonelaje_requerido: number;
+  distancia_km: number | null;
+  precio_base: number | null;
+  creado_en: string;
+  punto_ruta: { tipo: string; direccion_texto: string }[];
 };
 
 const CATEGORIA_COLOR: Record<string, { bg: string; text: string }> = {
-  Muebles: { bg: '#fde9dd', text: '#c2410c' },
-  Materiales: { bg: '#dbeafe', text: '#1d4ed8' },
+  'Mudanza completa': { bg: '#fde9dd', text: '#c2410c' },
+  'Electrodomésticos': { bg: '#dbeafe', text: '#1d4ed8' },
+  'Mercancía comercial': { bg: '#fef3c7', text: '#92400e' },
+  'Materiales de construcción': { bg: '#e0e7ff', text: '#3730a3' },
+  'Otros objetos pesados': { bg: '#f1f5f9', text: '#475569' },
 };
 
 function tiempoRelativo(fechaISO: string) {
@@ -66,10 +45,10 @@ function tiempoRelativo(fechaISO: string) {
 }
 
 export default function ScreenHomeFletero() {
-  const { usuario } = useAuth();
+  const { usuario, setUsuario } = useAuth();
   const [disponible, setDisponible] = useState<boolean>(usuario?.disponible ?? false);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
 
   const nombre = usuario?.nombre ?? 'Fletero';
   const iniciales = nombre
@@ -80,42 +59,57 @@ export default function ScreenHomeFletero() {
     .toUpperCase();
 
   const cargarSolicitudes = useCallback(async () => {
+    if (!usuario?.fletero_id) return;
+
     const { data, error } = await supabase
-      .from(TABLA_SOLICITUDES)
-      .select('id, categoria, titulo, origen, destino, peso_ton, distancia_km, precio_base, created_at')
-      .eq('estado', 'disponible') // 👈 ajusta el valor/columna de filtro si difiere
-      .order('created_at', { ascending: false });
+      .from('solicitud')
+      .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, creado_en, categoria_carga(nombre), punto_ruta(tipo, direccion_texto)')
+      .eq('estado', 'publicada')
+      .is('fletero_id', null) // solo solicitudes que NADIE ha tomado todavía
+      .lte('tonelaje_requerido', usuario.tonelaje) // que el vehículo del fletero alcance
+      .order('creado_en', { ascending: false });
 
     if (error) {
       console.error('Error al cargar solicitudes:', error);
       return;
     }
 
-    setSolicitudes(data ?? []);
-  }, []);
+    setSolicitudes((data as any) ?? []);
+  }, [usuario]);
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
+      setCargandoSolicitudes(true);
       await cargarSolicitudes();
-      setLoading(false);
+      setCargandoSolicitudes(false);
     })();
   }, [cargarSolicitudes]);
 
   const toggleDisponible = async (valor: boolean) => {
     setDisponible(valor); // optimista en UI
 
-    if (!usuario?.id) return;
+    if (!usuario?.fletero_id) return;
 
     const { error } = await supabase
-      .from(TABLA_FLETERO)
-      .update({ disponible: valor }) // 👈 ajusta nombre de columna si difiere
-      .eq('fletero_id', usuario.id); // 👈 ajusta nombre de columna PK/FK si difiere
+      .from('fletero')
+      .update({ disponible: valor })
+      .eq('fletero_id', usuario.fletero_id);
 
     if (error) {
       console.error('Error al actualizar disponibilidad:', error);
       setDisponible(!valor); // revertir si falló
+      return;
     }
+
+    setUsuario({ ...usuario, disponible: valor });
+
+    if (valor) {
+      cargarSolicitudes();
+    }
+  };
+
+  const verDetalleSolicitud = (solicitudId: number) => {
+    router.push(`/Screen/Detalles/ScreenDetallesFletero?solicitudId=${solicitudId}` as any);
   };
 
   return (
@@ -132,9 +126,13 @@ export default function ScreenHomeFletero() {
               <Ionicons name="cube-outline" size={18} color="#22c55e" style={{ marginLeft: 6 }} />
             </View>
           </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{iniciales}</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/Screen/Setting/ScreenSettingsFletero')}
+          >
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{iniciales}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.toggleCard}>
@@ -153,7 +151,6 @@ export default function ScreenHomeFletero() {
         </View>
       </View>
 
-     
       <ScrollView style={styles.content} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <Text style={styles.sectionLabel}>SOLICITUDES DISPONIBLES PARA TI</Text>
 
@@ -163,79 +160,66 @@ export default function ScreenHomeFletero() {
           </Text>
         )}
 
-        {disponible && loading && (
+        {disponible && cargandoSolicitudes && (
           <ActivityIndicator color="#f97316" style={{ marginTop: 20 }} />
         )}
 
-        {disponible && !loading && solicitudes.length === 0 && (
+        {disponible && !cargandoSolicitudes && solicitudes.length === 0 && (
           <Text style={{ color: '#94a3b8', fontSize: 13 }}>
             No hay solicitudes disponibles por el momento.
           </Text>
         )}
 
         {disponible &&
-          !loading &&
+          !cargandoSolicitudes &&
           solicitudes.map((s) => {
-            const colores = CATEGORIA_COLOR[s.categoria] ?? { bg: '#f1f5f9', text: '#475569' };
+            const nombreCategoria = s.categoria_carga?.nombre ?? 'Otros';
+            const colores = CATEGORIA_COLOR[nombreCategoria] ?? { bg: '#f1f5f9', text: '#475569' };
+            const origen = s.punto_ruta?.find((p) => p.tipo === 'origen')?.direccion_texto ?? 'Origen';
+            const destino = s.punto_ruta?.find((p) => p.tipo === 'destino')?.direccion_texto ?? 'Destino';
+
             return (
-              <TouchableOpacity
-                key={s.id}
-                style={styles.card}
-                activeOpacity={0.8}
-                onPress={() => router.push(`/Screen/Pedido/ScreenFechaPedido?id=${s.id}` as any)}
-              >
-                <View style={styles.cardTop}>
-                  <View style={[styles.badge, { backgroundColor: colores.bg }]}>
-                    <Text style={[styles.badgeText, { color: colores.text }]}>{s.categoria}</Text>
+              <View key={s.solicitud_id} style={styles.card}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => verDetalleSolicitud(s.solicitud_id)}
+                >
+                  <View style={styles.cardTop}>
+                    <View style={[styles.badge, { backgroundColor: colores.bg }]}>
+                      <Text style={[styles.badgeText, { color: colores.text }]}>{nombreCategoria}</Text>
+                    </View>
+                    <Text style={styles.tiempo}>{tiempoRelativo(s.creado_en)}</Text>
                   </View>
-                  <Text style={styles.tiempo}>{tiempoRelativo(s.created_at)}</Text>
-                </View>
 
-                <Text style={styles.cardTitulo}>{s.titulo}</Text>
-                <Text style={styles.cardRuta}>
-                  {s.origen} → {s.destino} · {s.peso_ton} ton
-                </Text>
-
-                <View style={styles.cardBottom}>
-                  <Text style={styles.distancia}>~{s.distancia_km} km</Text>
-                  <Text style={styles.precio}>
-                    Precio base: ${s.precio_base.toLocaleString('es-MX')} MXN
+                  <Text style={styles.cardTitulo} numberOfLines={1}>{s.descripcion_carga}</Text>
+                  <Text style={styles.cardRuta} numberOfLines={1}>
+                    {origen} → {destino} · {s.tonelaje_requerido} ton
                   </Text>
-                </View>
-              </TouchableOpacity>
+
+                  <View style={styles.cardBottom}>
+                    <Text style={styles.distancia}>
+                      {s.distancia_km ? `~${s.distancia_km.toFixed(1)} km` : '— km'}
+                    </Text>
+                    <Text style={styles.precio}>
+                      {s.precio_base
+                        ? `Precio base: $${s.precio_base.toLocaleString('es-MX')} MXN`
+                        : 'Precio pendiente'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.botonVerDetalle}
+                  onPress={() => verDetalleSolicitud(s.solicitud_id)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.textoBotonVerDetalle}>Ver detalles</Text>
+                </TouchableOpacity>
+              </View>
             );
           })}
       </ScrollView>
-
-
-      <View style={styles.tabBar}>
-        <TabItem icon="home" label="Inicio" activo onPress={() => {}} />
-        <TabItem icon="list-outline" label="Solicitudes" onPress={() => router.push('/Screen/Solicitudes/ScreenSolicitudes' as any)} />
-        <TabItem icon="notifications-outline" label="Avisos" onPress={() => router.push('/Screen/Avisos/ScreenAvisos' as any)} />
-        <TabItem icon="person-outline" label="Perfil" onPress={() => router.push('/Screen/Perfil/ScreenPerfil' as any)} />
-      </View>
     </SafeAreaView>
-  );
-}
-
-function TabItem({
-  icon,
-  label,
-  activo,
-  onPress,
-}: {
-  icon: any;
-  label: string;
-  activo?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity style={styles.tabItem} onPress={onPress}>
-      <Ionicons name={icon} size={20} color={activo ? '#f97316' : '#94a3b8'} />
-      <Text style={[styles.tabLabel, activo && { color: '#f97316', fontWeight: '700' }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
 
@@ -287,13 +271,16 @@ const styles = StyleSheet.create({
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   distancia: { fontSize: 13, color: '#64748b' },
   precio: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+  botonVerDetalle: {
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 14,
   },
-  tabItem: { flex: 1, alignItems: 'center', gap: 4 },
-  tabLabel: { fontSize: 11, color: '#94a3b8' },
+  textoBotonVerDetalle: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
 });
