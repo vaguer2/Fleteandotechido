@@ -1,9 +1,9 @@
 //import { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 //import { EstadoGlobalContext } from '../../../components/Context/EstadoGlobalUser';
-import { useAuth } from '../../../../providers/AuthProvider';
 import { supabase } from '../../../../lib/supabase';
+import { useAuth } from '../../../../providers/AuthProvider';
 const MENU_ITEMS = [
   { id: 'datos', label: 'Datos personales' },
   { id: 'direcciones', label: 'Mis direcciones' },
@@ -14,7 +14,7 @@ const MENU_ITEMS = [
 ];
 
 export default function ScreenSettings() {
-  const { setLogin, setUsuario, setEsTransportista, usuario } = useAuth();
+  const { /*setLogin, setUsuario, setEsTransportista, */usuario } = useAuth();
   const router = useRouter();
 
   // TODO: reemplazar con datos de la base de datos
@@ -30,10 +30,6 @@ export default function ScreenSettings() {
 
   const cerrarSesion = async () => {
     await supabase.auth.signOut();
-    setLogin(false);
-    setUsuario(null);
-    setEsTransportista(false);
-    router.replace('/');
   };
 
   return (

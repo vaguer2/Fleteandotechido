@@ -54,7 +54,7 @@ export default function AuthProvider(props: Props) {
 
                 if (usuarioData) {
                     setUsuario(usuarioData);
-                    router.replace('/Screen/Home/ScreenHomeUser');
+                    router.replace('/Screen/Precios/ScreenPrecios');
                 } else {
                     const { data: fleteroData } = await supabase
                         .from('fletero')
@@ -69,11 +69,11 @@ export default function AuthProvider(props: Props) {
                     } else {
                         // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('/Screen/Documento/ScreenRevisionDocumento');
+                        router.replace('/Screen/Precios/ScreenPrecios');
                     }
                 }
             } else {
-                router.replace('/Screen/Documento/ScreenRevisionDocumento');
+                router.replace('/Screen/Precios/ScreenPrecios');
             }
 
             setLoading(false);
@@ -96,7 +96,7 @@ export default function AuthProvider(props: Props) {
 
                 if (usuarioData) {
                     setUsuario(usuarioData);
-                    router.replace('/Screen/Home/ScreenHomeUser');
+                    router.replace('/Screen/Precios/ScreenPrecios');
                 } else {
                     const { data: fleteroData } = await supabase
                         .from('fletero')
@@ -111,14 +111,14 @@ export default function AuthProvider(props: Props) {
                     } else {
                         // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('/Screen/Documento/ScreenRevisionDocumento');
+                        router.replace('/Screen/Precios/ScreenPrecios');
                     }
                 }
             } else {
                 setLogin(false);
                 setUsuario(null);
                 setEsTransportista(false);
-                router.replace('/Screen/Documento/ScreenRevisionDocumento');
+                router.replace('/Screen/Precios/ScreenPrecios');
             }
         });
 

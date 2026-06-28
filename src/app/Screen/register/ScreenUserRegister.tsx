@@ -1,11 +1,10 @@
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Poppins_700Bold, Poppins_800ExtraBold, useFonts } from '@expo-google-fonts/poppins';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Dimensions, Image, Pressable, StyleSheet, Text, TextInput, View, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
-import { ScrollView } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -100,7 +99,7 @@ export default function ScreenUserRegister() {
                 Alert.alert(
                     'Registro exitoso',
                     'Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.',
-                    [{ text: 'OK', onPress: () => router.replace('/Screen/Login/ScreenLoginUser') }]
+                    [{ text: 'OK', onPress: () => router.replace('/Screen/Login/ScreenLoginUser') }] //aqui cambie
                 );
             }, 300);
 

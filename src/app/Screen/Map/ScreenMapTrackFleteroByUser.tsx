@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-
-export default function ScreenResultado() {
+//Aqui va la pantalla 'RASTREO EN TIEMPO '
+export default function ScreenMapTrackFleteroByUser() {
   return (
     <View>
-      <Text>ScreenResultado</Text>
+      <Text>ScreenMapTrackFleteroByUser</Text>
     </View>
   )
 }
