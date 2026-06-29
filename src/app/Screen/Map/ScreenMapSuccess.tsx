@@ -217,11 +217,11 @@ export default function ScreenMapSuccess() {
         <Pressable
           style={({ pressed }) => [styles.botonVerMapa, pressed && { opacity: 0.85 }]}
           onPress={() => router.push({
-            pathname: '/Screen/Map/ScreenMapRealtime',
+            pathname: '/Screen/Map/ScreenRastroMap',
             params: { solicitudId },
           } as any)}
         >
-          <Text style={styles.textoBotonVerMapa}>Ver en mapa en tiempo real</Text>
+          <Text style={styles.textoBotonVerMapa}>Ver el mapa en tiempo real</Text>
         </Pressable>
       </View>
     </View>
