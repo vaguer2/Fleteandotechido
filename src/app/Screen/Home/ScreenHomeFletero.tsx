@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRastreoFletero } from '../../../hooks/useRastreoFletero';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
 
@@ -49,6 +50,7 @@ export default function ScreenHomeFletero() {
   const [disponible, setDisponible] = useState<boolean>(usuario?.disponible ?? false);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
+  const [servicioActivo, setServicioActivo] = useState<any>(null);
 
   const nombre = usuario?.nombre ?? 'Fletero';
   const iniciales = nombre
@@ -58,6 +60,30 @@ export default function ScreenHomeFletero() {
     .join('')
     .toUpperCase();
 
+  // El hook de rastreo vive aquí, en una pantalla que el fletero no abandona constantemente
+  const rastreoActivo = servicioActivo !== null;
+  useRastreoFletero(servicioActivo?.solicitud_id, rastreoActivo);
+
+  const cargarServicioActivo = useCallback(async () => {
+    if (!usuario?.fletero_id) return;
+
+    const { data, error } = await supabase
+      .from('solicitud')
+      .select('solicitud_id, estado, precio_ajustado, precio_base, punto_ruta(tipo, direccion_texto)')
+      .eq('fletero_id', usuario.fletero_id)
+      .in('estado', ['aceptada', 'en_progreso'])
+      .order('hora_inicio', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error al cargar servicio activo:', error);
+      return;
+    }
+
+    setServicioActivo(data);
+  }, [usuario]);
+
   const cargarSolicitudes = useCallback(async () => {
     if (!usuario?.fletero_id) return;
 
@@ -65,8 +91,8 @@ export default function ScreenHomeFletero() {
       .from('solicitud')
       .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, creado_en, categoria_carga(nombre), punto_ruta(tipo, direccion_texto)')
       .eq('estado', 'publicada')
-      .is('fletero_id', null) // solo solicitudes que NADIE ha tomado todavía
-      .lte('tonelaje_requerido', usuario.tonelaje) // que el vehículo del fletero alcance
+      .is('fletero_id', null)
+      .lte('tonelaje_requerido', usuario.tonelaje)
       .order('creado_en', { ascending: false });
 
     if (error) {
@@ -80,13 +106,14 @@ export default function ScreenHomeFletero() {
   useEffect(() => {
     (async () => {
       setCargandoSolicitudes(true);
+      await cargarServicioActivo();
       await cargarSolicitudes();
       setCargandoSolicitudes(false);
     })();
-  }, [cargarSolicitudes]);
+  }, [cargarSolicitudes, cargarServicioActivo]);
 
   const toggleDisponible = async (valor: boolean) => {
-    setDisponible(valor); // optimista en UI
+    setDisponible(valor);
 
     if (!usuario?.fletero_id) return;
 
@@ -97,7 +124,7 @@ export default function ScreenHomeFletero() {
 
     if (error) {
       console.error('Error al actualizar disponibilidad:', error);
-      setDisponible(!valor); // revertir si falló
+      setDisponible(!valor);
       return;
     }
 
@@ -112,11 +139,19 @@ export default function ScreenHomeFletero() {
     router.push(`/Screen/Detalles/ScreenDetallesFletero?solicitudId=${solicitudId}` as any);
   };
 
+  const verRastreoServicioActivo = () => {
+    if (!servicioActivo) return;
+    router.push(`/Screen/Map/ScreenRastroMap?solicitudId=${servicioActivo.solicitud_id}` as any);
+  };
+
+  const obtenerDestino = (solicitud: any) => {
+    return solicitud.punto_ruta?.find((p: any) => p.tipo === 'destino')?.direccion_texto ?? 'Destino';
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#0b2545" />
 
-      {/* Header azul */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
@@ -152,6 +187,25 @@ export default function ScreenHomeFletero() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+
+        {/* Tarjeta de servicio activo, si existe */}
+        {servicioActivo && (
+          <TouchableOpacity
+            style={styles.cardServicioActivo}
+            onPress={verRastreoServicioActivo}
+            activeOpacity={0.85}
+          >
+            <View style={styles.filaServicioActivo}>
+              <View style={styles.dotVerdePulso} />
+              <Text style={styles.tituloServicioActivo}>Servicio en progreso</Text>
+            </View>
+            <Text style={styles.destinoServicioActivo} numberOfLines={1}>
+              Hacia: {obtenerDestino(servicioActivo)}
+            </Text>
+            <Text style={styles.linkServicioActivo}>Ver rastreo en tiempo real →</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.sectionLabel}>SOLICITUDES DISPONIBLES PARA TI</Text>
 
         {!disponible && (
@@ -251,6 +305,41 @@ const styles = StyleSheet.create({
   toggleSub: { color: '#94a3b8', fontSize: 12 },
   content: { flex: 1, backgroundColor: '#f8fafc' },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.5, marginBottom: 14 },
+
+  cardServicioActivo: {
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  filaServicioActivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dotVerdePulso: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 8,
+  },
+  tituloServicioActivo: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  destinoServicioActivo: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    marginBottom: 10,
+  },
+  linkServicioActivo: {
+    color: '#f97316',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,

@@ -1,16 +1,17 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
-
-const enviosEnProceso = [];
-const enviosRecientes = [];
 
 const badgeColor = (estado) => {
     switch (estado) {
-        case 'En camino': return { bg: '#E8F5E9', text: '#2E7D32' };
-        case 'Entregado': return { bg: '#E8F5E9', text: '#2E7D32' };
-        case 'Pendiente': return { bg: '#FFF3E0', text: '#E65100' };
-        default: return { bg: '#F5F5F5', text: '#555' };
+        case 'publicada': return { bg: '#FFF3E0', text: '#E65100', label: 'Buscando fletero' };
+        case 'aceptada': return { bg: '#E3F2FD', text: '#1565C0', label: 'Fletero asignado' };
+        case 'en_progreso': return { bg: '#E8F5E9', text: '#2E7D32', label: 'En camino' };
+        case 'completada': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Entregado' };
+        case 'cancelada': return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelado' };
+        default: return { bg: '#F5F5F5', text: '#555', label: estado };
     }
 };
 
@@ -18,10 +19,72 @@ export default function ScreenHomeUsers() {
     const { usuario } = useAuth();
     const router = useRouter();
 
+    const [solicitudesActivas, setSolicitudesActivas] = useState([]);
+    const [solicitudesRecientes, setSolicitudesRecientes] = useState([]);
+    const [cargando, setCargando] = useState(true);
+
     const nombre = usuario?.nombre ?? 'Usuario';
 
-    const irAlMapa = () => router.push('/Screen/Map');
+    useEffect(() => {
+        async function cargarSolicitudes() {
+            if (!usuario?.usuario_id) {
+                setCargando(false);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('solicitud')
+                .select('*, categoria_carga(nombre), punto_ruta(*), fletero(nombre, calificacion_promedio, tipo_vehiculo)')
+                .eq('usuario_id', usuario.usuario_id)
+                .neq('estado', 'borrador')
+                .order('creado_en', { ascending: false });
+
+            if (error) {
+                console.log('Error al cargar solicitudes:', error);
+                setCargando(false);
+                return;
+            }
+
+            const activas = (data ?? []).filter((s) =>
+                ['publicada', 'aceptada', 'en_progreso'].includes(s.estado)
+            );
+            const recientes = (data ?? []).filter((s) =>
+                ['completada', 'cancelada'].includes(s.estado)
+            );
+
+            setSolicitudesActivas(activas);
+            setSolicitudesRecientes(recientes);
+            setCargando(false);
+        }
+
+        cargarSolicitudes();
+    }, [usuario]);
+
     const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
+
+    const irAlMapaOEsperar = (solicitud) => {
+        if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_progreso') {
+            router.push({
+                pathname: '/Screen/Map/ScreenMapSuccess',
+                params: { solicitudId: solicitud.solicitud_id },
+            });
+        }
+        // Si está "publicada", no hace nada — todavía no hay fletero ni mapa que mostrar
+    };
+
+    const formatearFecha = (fechaISO) => {
+        const fecha = new Date(fechaISO);
+        return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    };
+
+    const obtenerTitulo = (solicitud) => {
+        return solicitud.categoria_carga?.nombre ?? solicitud.descripcion_carga ?? 'Flete';
+    };
+
+    const obtenerRutaTexto = (solicitud) => {
+        const destino = solicitud.punto_ruta?.find((p) => p.tipo === 'destino');
+        return destino?.direccion_texto ?? 'Destino no definido';
+    };
 
     return (
         <ScrollView style={styles.container} bounces={false}>
@@ -46,45 +109,67 @@ export default function ScreenHomeUsers() {
 
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>En proceso</Text>
-                <TouchableOpacity onPress={irAlMapa}>
-                    <Text style={styles.seccionLink}>Ver en mapa </Text>
-                </TouchableOpacity>
             </View>
 
-            {enviosEnProceso.map((item) => {
+            {cargando && (
+                <ActivityIndicator color="#FF6B00" style={{ marginVertical: 12 }} />
+            )}
+
+            {!cargando && solicitudesActivas.length === 0 && (
+                <Text style={styles.textoVacio}>No tienes fletes en proceso por ahora.</Text>
+            )}
+
+            {!cargando && solicitudesActivas.map((item) => {
                 const colors = badgeColor(item.estado);
+                const tieneFletero = item.estado === 'aceptada' || item.estado === 'en_progreso';
+
                 return (
-                    <View key={item.id} style={styles.card}>
+                    <TouchableOpacity
+                        key={item.solicitud_id}
+                        style={styles.card}
+                        onPress={() => irAlMapaOEsperar(item)}
+                        activeOpacity={tieneFletero ? 0.7 : 1}
+                    >
                         <View style={styles.cardIcono} />
                         <View style={styles.cardInfo}>
-                            <Text style={styles.cardTitulo}>{item.titulo}</Text>
-                            <Text style={styles.cardSub}>{item.ruta} · {item.fecha}</Text>
+                            <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
+                            <Text style={styles.cardSub} numberOfLines={1}>
+                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
+                            </Text>
+                            {tieneFletero && item.fletero && (
+                                <Text style={styles.cardFletero}>
+                                    {item.fletero.nombre} · {item.fletero.tipo_vehiculo}
+                                </Text>
+                            )}
                         </View>
                         <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-                            <Text style={[styles.badgeText, { color: colors.text }]}>{item.estado}</Text>
+                            <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 );
             })}
 
             <View style={styles.seccionHeader}>
                 <Text style={styles.seccionTitulo}>Envíos recientes</Text>
-                <TouchableOpacity>
-                    <Text style={styles.seccionLink}>Ver todo </Text>
-                </TouchableOpacity>
             </View>
 
-            {enviosRecientes.map((item) => {
+            {!cargando && solicitudesRecientes.length === 0 && (
+                <Text style={styles.textoVacio}>Aún no tienes envíos anteriores.</Text>
+            )}
+
+            {!cargando && solicitudesRecientes.map((item) => {
                 const colors = badgeColor(item.estado);
                 return (
-                    <View key={item.id} style={styles.card}>
+                    <View key={item.solicitud_id} style={styles.card}>
                         <View style={styles.cardIcono} />
                         <View style={styles.cardInfo}>
-                            <Text style={styles.cardTitulo}>{item.titulo}</Text>
-                            <Text style={styles.cardSub}>{item.ruta} · {item.fecha}</Text>
+                            <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
+                            <Text style={styles.cardSub} numberOfLines={1}>
+                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
+                            </Text>
                         </View>
                         <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-                            <Text style={[styles.badgeText, { color: colors.text }]}>{item.estado}</Text>
+                            <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
                         </View>
                     </View>
                 );
@@ -118,11 +203,18 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
     },
-    notifDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+    avatarCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: '#FF6B00',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarLetra: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
     },
     btnPrincipal: {
         margin: 20,
@@ -154,10 +246,11 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#1A1A2E',
     },
-    seccionLink: {
+    textoVacio: {
         fontSize: 13,
-        color: '#FF6B00',
-        fontWeight: '600',
+        color: '#8A8FA8',
+        paddingHorizontal: 20,
+        marginBottom: 16,
     },
     card: {
         flexDirection: 'row',
@@ -192,6 +285,12 @@ const styles = StyleSheet.create({
     cardSub: {
         fontSize: 12,
         color: '#8A8FA8',
+    },
+    cardFletero: {
+        fontSize: 11,
+        color: '#FF6B00',
+        fontWeight: '600',
+        marginTop: 2,
     },
     badge: {
         paddingHorizontal: 10,

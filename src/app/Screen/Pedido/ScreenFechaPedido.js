@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
 
 const PASOS = ['Carga', 'Ruta', 'Fecha', 'Confirmar'];
@@ -30,7 +30,6 @@ export default function ScreenFechaPedido() {
     const [depositoCalculado, setDepositoCalculado] = useState(null);
     const [tabuladorId, setTabuladorId] = useState(null);
     const [cargando, setCargando] = useState(true);
-    const [guardando, setGuardando] = useState(false);
     const [sinTabulador, setSinTabulador] = useState(false);
 
     const distanciaEntrePuntos = (lat1, lon1, lat2, lon2) => {
@@ -103,20 +102,13 @@ export default function ScreenFechaPedido() {
                     puntoOrigen.longitud
                 );
 
-                console.log('Zona detectada:', zonaDetectada);
-                console.log('Tonelaje requerido (raw):', solicitud.tonelaje_requerido);
-                console.log('Tonelaje requerido (Number):', Number(solicitud.tonelaje_requerido));
-
                 const { data: tabulador, error: errorTabulador } = await supabase
                     .from('tabulador_precio')
                     .select('*')
                     .eq('zona_id', zonaDetectada)
                     .lte('tonelaje_min', solicitud.tonelaje_requerido)
-                    .gt('tonelaje_max', solicitud.tonelaje_requerido)  // ← cambié gte por gt
+                    .gt('tonelaje_max', solicitud.tonelaje_requerido)
                     .single();
-
-                console.log('Tabulador encontrado:', tabulador);
-                console.log('Error tabulador:', errorTabulador);
 
                 if (!errorTabulador && tabulador) {
                     tabuladorEncontrado = tabulador;
@@ -144,39 +136,6 @@ export default function ScreenFechaPedido() {
         cargarDatosSolicitud();
     }, [solicitudId]);
 
-    const confirmarPrecio = async () => {
-        if (!solicitudId || !precioCalculado) return;
-
-        setGuardando(true);
-        try {
-            const { error } = await supabase
-                .from('solicitud')
-                .update({
-                    precio_base: precioCalculado,
-                    deposito_requerido: depositoCalculado,
-                    tabulador_id: tabuladorId,
-                })
-                .eq('solicitud_id', solicitudId);
-
-            if (error) {
-                console.log('Error al actualizar solicitud:', error);
-                Alert.alert('Error', 'No se pudo guardar el precio. Intenta de nuevo.');
-                return;
-            }
-
-            router.push({
-                pathname: '/Screen/Pedido/ScreenConfirmarPedido',
-                params: { solicitudId },
-            });
-
-        } catch (error) {
-            console.log('Error general:', error);
-            Alert.alert('Error', 'Ocurrió un problema al confirmar.');
-        } finally {
-            setGuardando(false);
-        }
-    };
-
     if (cargando) {
         return (
             <View style={styles.centrado}>
@@ -203,18 +162,10 @@ export default function ScreenFechaPedido() {
                                     if (num === 2) router.back();
                                 }}
                             >
-                                <View style={[
-                                    styles.stepCircle,
-                                    completado && styles.stepDone,
-                                    activo && styles.stepActive,
-                                ]}>
-                                    <Text style={[styles.stepNum, (completado || activo) && styles.stepNumActive]}>
-                                        {num}
-                                    </Text>
+                                <View style={[styles.stepCircle, completado && styles.stepDone, activo && styles.stepActive]}>
+                                    <Text style={[styles.stepNum, (completado || activo) && styles.stepNumActive]}>{num}</Text>
                                 </View>
-                                <Text style={[styles.stepLabel, activo && styles.stepLabelActive]}>
-                                    {paso}
-                                </Text>
+                                <Text style={[styles.stepLabel, activo && styles.stepLabelActive]}>{paso}</Text>
                             </TouchableOpacity>
                             {index < PASOS.length - 1 && (
                                 <View style={[styles.lineaConector, completado && styles.lineaActiva]} />
@@ -230,12 +181,12 @@ export default function ScreenFechaPedido() {
             <View style={styles.card}>
                 <View style={styles.rutaRow}>
                     <View style={styles.dotVerde} />
-                    <Text style={styles.rutaTexto}>{resumen.origen}</Text>
+                    <Text style={styles.rutaTexto} numberOfLines={1}>{resumen.origen}</Text>
                 </View>
                 <View style={styles.lineaVertical} />
                 <View style={styles.rutaRow}>
                     <View style={styles.dotNaranja} />
-                    <Text style={styles.rutaTexto}>{resumen.destino}</Text>
+                    <Text style={styles.rutaTexto} numberOfLines={1}>{resumen.destino}</Text>
                 </View>
                 <View style={styles.separator} />
                 <View style={styles.infoGrid}>
@@ -266,7 +217,7 @@ export default function ScreenFechaPedido() {
                 </View>
             ) : (
                 <View style={styles.cardPrecio}>
-                    <Text style={styles.labelPrecio}>Precio estimado</Text>
+                    <Text style={styles.labelPrecio}>Precio base (tabulador)</Text>
                     <Text style={styles.montoPrecio}>${precioCalculado?.toLocaleString('es-MX')} MXN</Text>
 
                     <View style={styles.separator} />
@@ -276,29 +227,21 @@ export default function ScreenFechaPedido() {
                         <Text style={styles.montoDeposito}>${depositoCalculado?.toLocaleString('es-MX')} MXN</Text>
                     </View>
                     <Text style={styles.notaDeposito}>
-                        Se cobra al confirmar. Garantiza tu servicio ante el fletero que acepte tu solicitud.
+                        En el siguiente paso podrás ajustar tu oferta hasta un 15% por encima o por debajo de este precio.
                     </Text>
                 </View>
             )}
 
-            <View style={styles.cardInfo}>
-                <Text style={styles.infoTextoTitulo}>¿Cómo funciona ahora?</Text>
-                <Text style={styles.infoTexto}>
-                    Al confirmar, tu solicitud se publicará para que los fleteros disponibles en tu zona puedan verla y aceptarla. Te notificaremos en cuanto alguien la tome.
-                </Text>
-            </View>
-
             <TouchableOpacity
-                style={[styles.boton, (!precioCalculado || guardando || sinTabulador) && styles.botonDeshabilitado]}
-                onPress={confirmarPrecio}
-                disabled={!precioCalculado || guardando || sinTabulador}
+                style={[styles.boton, (!precioCalculado || sinTabulador) && styles.botonDeshabilitado]}
+                onPress={() => router.push({
+                    pathname: '/Screen/Precios/ScreenPrecioCliente', 
+                    params: { solicitudId, precioBase: precioCalculado },
+                })}
+                disabled={!precioCalculado || sinTabulador}
                 activeOpacity={0.85}
             >
-                {guardando ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.botonTexto}>Continuar</Text>
-                )}
+                <Text style={styles.botonTexto}>Continuar</Text>
             </TouchableOpacity>
 
         </ScrollView>
@@ -341,7 +284,6 @@ const styles = StyleSheet.create({
     infoValor: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
     sinTransportistas: { backgroundColor: '#FFF4EA', borderRadius: 12, padding: 16, marginBottom: 12 },
     sinTransportistasTexto: { fontSize: 13, color: '#92400E', textAlign: 'center' },
-
     cardPrecio: {
         backgroundColor: '#0F172A', borderRadius: 16, padding: 20, marginBottom: 16,
     },
@@ -351,13 +293,6 @@ const styles = StyleSheet.create({
     labelDeposito: { fontSize: 13, color: '#CBD5E1' },
     montoDeposito: { fontSize: 16, fontWeight: '700', color: '#F97316' },
     notaDeposito: { fontSize: 11, color: '#94A3B8', lineHeight: 16 },
-
-    cardInfo: {
-        backgroundColor: '#EFF6FF', borderRadius: 12, padding: 14, marginBottom: 16,
-    },
-    infoTextoTitulo: { fontSize: 13, fontWeight: '700', color: '#1D4ED8', marginBottom: 4 },
-    infoTexto: { fontSize: 12, color: '#1E40AF', lineHeight: 17 },
-
     boton: { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
     botonDeshabilitado: { backgroundColor: '#94A3B8' },
     botonTexto: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },

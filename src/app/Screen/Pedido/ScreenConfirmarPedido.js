@@ -1,6 +1,7 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 
 export default function ScreenConfirmarPedido() {
@@ -10,14 +11,10 @@ export default function ScreenConfirmarPedido() {
 
   const [pedido, setPedido] = useState({
     folio: '',
-    transportista: '',
-    estrellas: 0,
-    placa: '',
-    tiempoEstimado: '',
-    total: '',
     distancia: '',
     origen: '',
     destino: '',
+    precioOfrecido: '',
   });
   const [cargando, setCargando] = useState(true);
 
@@ -38,10 +35,10 @@ export default function ScreenConfirmarPedido() {
         console.log('Error al publicar la solicitud:', errorUpdate);
       }
 
-      // 2. Traer los datos completos del pedido, incluyendo fletero y puntos de ruta
+      // 2. Traer los datos completos del pedido publicado
       const { data: solicitud, error: errorSolicitud } = await supabase
         .from('solicitud')
-        .select('*, fletero(*), punto_ruta(*)')
+        .select('*, punto_ruta(*)')
         .eq('solicitud_id', solicitudId)
         .single();
 
@@ -51,19 +48,17 @@ export default function ScreenConfirmarPedido() {
         return;
       }
 
-      const puntoOrigen = solicitud.punto_ruta.find((p) => p.tipo === 'origen');
-      const puntoDestino = solicitud.punto_ruta.find((p) => p.tipo === 'destino');
+      const puntoOrigen = solicitud.punto_ruta?.find((p) => p.tipo === 'origen');
+      const puntoDestino = solicitud.punto_ruta?.find((p) => p.tipo === 'destino');
 
       setPedido({
         folio: `FLT-${String(solicitud.solicitud_id).padStart(5, '0')}`,
-        transportista: solicitud.fletero?.nombre ?? 'Sin asignar',
-        estrellas: Math.round(solicitud.fletero?.calificacion_promedio ?? 0),
-        placa: solicitud.fletero?.placa_vehiculo ?? '—',
-        tiempoEstimado: '20-30 min',
-        total: solicitud.precio_base ? `$${solicitud.precio_base}` : '—',
         distancia: solicitud.distancia_km ? `${solicitud.distancia_km.toFixed(1)} km` : '—',
         origen: puntoOrigen?.direccion_texto ?? 'No definido',
         destino: puntoDestino?.direccion_texto ?? 'No definido',
+        precioOfrecido: solicitud.precio_ajustado
+          ? `$${solicitud.precio_ajustado}`
+          : (solicitud.precio_base ? `$${solicitud.precio_base}` : '—'),
       });
 
       setCargando(false);
@@ -89,10 +84,17 @@ export default function ScreenConfirmarPedido() {
       </View>
 
       {/* Título */}
-      <Text style={styles.titulo}>¡Flete confirmado!</Text>
+      <Text style={styles.titulo}>¡Solicitud publicada!</Text>
       <Text style={styles.subtitulo}>
-        {pedido.transportista} está en camino.{'\n'}Te notificamos cuando llegue.
+        Los fleteros disponibles en tu zona ya pueden ver tu solicitud.{'\n'}
+        Te notificaremos en cuanto alguien la acepte.
       </Text>
+
+      {/* Estado de espera */}
+      <View style={styles.esperaCard}>
+        <ActivityIndicator color="#F97316" style={{ marginBottom: 10 }} />
+        <Text style={styles.esperaTexto}>Esperando a que un fletero acepte tu solicitud...</Text>
+      </View>
 
       {/* Folio */}
       <Text style={styles.folio}>
@@ -114,43 +116,26 @@ export default function ScreenConfirmarPedido() {
           <Text style={styles.filaValor}>{pedido.distancia}</Text>
         </View>
         <View style={styles.fila}>
-          <Text style={styles.filaLabel}>Transportista</Text>
-          <Text style={styles.filaValor}>
-            {pedido.transportista} ⭐ {pedido.estrellas}
-          </Text>
-        </View>
-        <View style={styles.fila}>
-          <Text style={styles.filaLabel}>Placa del vehículo</Text>
-          <Text style={styles.filaValor}>{pedido.placa}</Text>
-        </View>
-        <View style={styles.fila}>
-          <Text style={styles.filaLabel}>Tiempo estimado</Text>
-          <Text style={styles.filaValor}>{pedido.tiempoEstimado}</Text>
-        </View>
-        <View style={styles.fila}>
-          <Text style={styles.filaLabel}>Total</Text>
-          <Text style={[styles.filaValor, styles.filaTotal]}>{pedido.total}</Text>
+          <Text style={styles.filaLabel}>Tu oferta</Text>
+          <Text style={[styles.filaValor, styles.filaTotal]}>{pedido.precioOfrecido}</Text>
         </View>
       </View>
 
-      {/* Botones */}
+      {/* Aviso informativo */}
+      <View style={styles.infoCard}>
+        <Ionicons name="information-circle" size={18} color="#1D4ED8" />
+        <Text style={styles.infoTexto}>
+          Podrás ver el mapa y rastrear a tu fletero en cuanto acepten tu solicitud, desde la pantalla de inicio.
+        </Text>
+      </View>
+
+      {/* Botón */}
       <TouchableOpacity
         style={styles.botonPrimario}
-        activeOpacity={0.85}
-        onPress={() => router.push({
-          pathname: '/Screen/Map/ScreenMapSuccess',
-          params: { solicitudId },
-        })}
-      >
-        <Text style={styles.botonPrimarioTexto}>Ver en el mapa</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.botonSecundario}
         onPress={() => router.push('/Screen/Home/ScreenHomeUser')}
         activeOpacity={0.85}
       >
-        <Text style={styles.botonSecundarioTexto}>Ir al inicio</Text>
+        <Text style={styles.botonPrimarioTexto}>Ir al inicio</Text>
       </TouchableOpacity>
 
     </View>
@@ -197,7 +182,22 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  esperaCard: {
+    backgroundColor: '#FFF4EA',
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  esperaTexto: {
+    fontSize: 13,
+    color: '#92400E',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   folio: {
     fontSize: 14,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -241,28 +241,32 @@ const styles = StyleSheet.create({
     color: '#F97316',
     fontSize: 15,
   },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 14,
+    width: '100%',
+    marginBottom: 24,
+  },
+  infoTexto: {
+    fontSize: 12,
+    color: '#1E40AF',
+    lineHeight: 17,
+    flex: 1,
+  },
   botonPrimario: {
     backgroundColor: '#0F172A',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     width: '100%',
-    marginBottom: 12,
   },
   botonPrimarioTexto: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  botonSecundario: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '100%',
-  },
-  botonSecundarioTexto: {
-    color: '#0F172A',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthData>({
     loading: true,
     session: null,
     usuario: null,
-    setUsuario: () => { },      
+    setUsuario: () => { },
     esTransportista: false,
     setEsTransportista: () => { },
     login: false,
@@ -54,7 +54,7 @@ export default function AuthProvider(props: Props) {
 
                 if (usuarioData) {
                     setUsuario(usuarioData);
-                    router.replace('/Screen/Map/ScreenMapSuccess');
+                    router.replace('/Screen/Home/ScreenHomeUser');
                 } else {
                     const { data: fleteroData } = await supabase
                         .from('fletero')
@@ -67,13 +67,12 @@ export default function AuthProvider(props: Props) {
                         setEsTransportista(true);
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
                     } else {
-                        // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('/Screen/Map/ScreenMapSuccess');
+                        router.replace('/Screen/Login/ScreenStart');
                     }
                 }
             } else {
-                router.replace('/Screen/Map/ScreenMapSuccess');
+                router.replace('/Screen/Login/ScreenStart');
             }
 
             setLoading(false);
@@ -96,7 +95,7 @@ export default function AuthProvider(props: Props) {
 
                 if (usuarioData) {
                     setUsuario(usuarioData);
-                    router.replace('/Screen/Map/ScreenMapSuccess');
+                    router.replace('/Screen/Home/ScreenHomeUser');
                 } else {
                     const { data: fleteroData } = await supabase
                         .from('fletero')
@@ -109,16 +108,15 @@ export default function AuthProvider(props: Props) {
                         setEsTransportista(true);
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
                     } else {
-                        // No existe en ninguna tabla, cerrar sesión
                         await supabase.auth.signOut();
-                        router.replace('/Screen/Map/ScreenMapSuccess');
+                        router.replace('/Screen/Login/ScreenStart');
                     }
                 }
             } else {
                 setLogin(false);
                 setUsuario(null);
                 setEsTransportista(false);
-                router.replace('/Screen/Map/ScreenMapSuccess');
+                router.replace('/Screen/Login/ScreenStart');
             }
         });
 

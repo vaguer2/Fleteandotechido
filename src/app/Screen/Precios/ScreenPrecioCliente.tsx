@@ -14,7 +14,7 @@ const BG = '#F5F7FA';
 
 const MARGEN = 0.15;
 
-export default function ScreenPrecios() {
+export default function ScreenPrecioCliente() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
