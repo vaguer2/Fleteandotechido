@@ -7,8 +7,8 @@ import { useAuth } from '../../../../providers/AuthProvider';
 const badgeColor = (estado) => {
     switch (estado) {
         case 'publicada': return { bg: '#FFF3E0', text: '#E65100', label: 'Buscando fletero' };
-        case 'aceptada': return { bg: '#E3F2FD', text: '#1565C0', label: 'Fletero asignado' };
-        case 'en_progreso': return { bg: '#E8F5E9', text: '#2E7D32', label: 'En camino' };
+        case 'aceptada': return { bg: '#FEF9C3', text: '#854D0E', label: 'Fletero en camino' };
+        case 'en_progreso': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Flete en progreso' };
         case 'completada': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Entregado' };
         case 'cancelada': return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelado' };
         default: return { bg: '#F5F5F5', text: '#555', label: estado };
@@ -63,13 +63,13 @@ export default function ScreenHomeUsers() {
     const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
 
     const irAlMapaOEsperar = (solicitud) => {
-        if (solicitud.estado === 'aceptada' || solicitud.estado === 'en_progreso') {
+        if (solicitud.estado === 'en_progreso') {
             router.push({
                 pathname: '/Screen/Map/ScreenMapSuccess',
                 params: { solicitudId: solicitud.solicitud_id },
             });
         }
-        // Si está "publicada", no hace nada — todavía no hay fletero ni mapa que mostrar
+        // 'aceptada' y 'publicada' no navegan — todavía no hay mapa útil que mostrar
     };
 
     const formatearFecha = (fechaISO) => {
@@ -121,31 +121,43 @@ export default function ScreenHomeUsers() {
 
             {!cargando && solicitudesActivas.map((item) => {
                 const colors = badgeColor(item.estado);
-                const tieneFletero = item.estado === 'aceptada' || item.estado === 'en_progreso';
+                const tieneFletero = item.estado === 'en_progreso';
+                const tieneChat = item.estado === 'aceptada' || item.estado === 'en_progreso';
 
                 return (
-                    <TouchableOpacity
-                        key={item.solicitud_id}
-                        style={styles.card}
-                        onPress={() => irAlMapaOEsperar(item)}
-                        activeOpacity={tieneFletero ? 0.7 : 1}
-                    >
-                        <View style={styles.cardIcono} />
-                        <View style={styles.cardInfo}>
-                            <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
-                            <Text style={styles.cardSub} numberOfLines={1}>
-                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
-                            </Text>
-                            {tieneFletero && item.fletero && (
-                                <Text style={styles.cardFletero}>
-                                    {item.fletero.nombre} · {item.fletero.tipo_vehiculo}
+                    <View key={item.solicitud_id} style={styles.card}>
+                        <TouchableOpacity
+                            style={styles.cardContenido}
+                            onPress={() => irAlMapaOEsperar(item)}
+                            activeOpacity={tieneFletero ? 0.7 : 1}
+                        >
+                            <View style={styles.cardIcono} />
+                            <View style={styles.cardInfo}>
+                                <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
+                                <Text style={styles.cardSub} numberOfLines={1}>
+                                    {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
                                 </Text>
-                            )}
-                        </View>
-                        <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-                            <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
-                        </View>
-                    </TouchableOpacity>
+                                {tieneFletero && item.fletero && (
+                                    <Text style={styles.cardFletero}>
+                                        {item.fletero.nombre} · {item.fletero.tipo_vehiculo}
+                                    </Text>
+                                )}
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+                                <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {tieneChat && (
+                            <TouchableOpacity
+                                style={styles.btnChat}
+                                onPress={() => router.push(`Screen/Mensaje/ScreenMensajes?solicitudId=${item.solicitud_id}`)}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.btnChatTexto}>💬 Chatear con el fletero</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 );
             })}
 
@@ -253,7 +265,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     card: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
         marginHorizontal: 20,
@@ -299,6 +311,23 @@ const styles = StyleSheet.create({
     },
     badgeText: {
         fontSize: 12,
+        fontWeight: '600',
+    },
+    cardContenido: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    btnChat: {
+        backgroundColor: '#1A1A2E',
+        borderRadius: 10,
+        paddingVertical: 10,
+        alignItems: 'center',
+        marginTop: 10,
+        paddingHorizontal:20
+    },
+    btnChatTexto: {
+        color: '#FFFFFF',
+        fontSize: 13,
         fontWeight: '600',
     },
 });

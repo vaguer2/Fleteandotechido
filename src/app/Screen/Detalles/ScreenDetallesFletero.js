@@ -1,18 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-  StyleSheet,
-} from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
 
@@ -74,7 +63,7 @@ export default function ScreenDetallesFletero() {
         .update({
           fletero_id: usuario.fletero_id,
           estado: 'aceptada',
-          hora_inicio: new Date().toISOString(),
+          // hora_inicio ya NO va aquí — se pone cuando inicie el servicio real
         })
         .eq('solicitud_id', solicitudId)
         .is('fletero_id', null);
@@ -84,6 +73,7 @@ export default function ScreenDetallesFletero() {
         Alert.alert('Error', 'No se pudo aceptar la solicitud. Intenta de nuevo.');
         return;
       }
+
       const { data: solicitudActualizada } = await supabase
         .from('solicitud')
         .select('*')
@@ -93,9 +83,10 @@ export default function ScreenDetallesFletero() {
       if (solicitudActualizada) {
         setSolicitud(solicitudActualizada);
       }
+
       Alert.alert(
-        '¡Listo!',
-        'Aceptaste la solicitud correctamente.',
+        '¡Solicitud aceptada!',
+        'Dirígete al punto de origen. Cuando llegues y estés listo, toca "Iniciar servicio" desde tu pantalla de inicio.',
         [{ text: 'OK', onPress: () => router.replace('/Screen/Home/ScreenHomeFletero') }]
       );
 

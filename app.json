@@ -1,21 +1,21 @@
 {
   "expo": {
     "name": "FleteandoTe",
-    "slug": "FleteandoTe",
+    "slug": "fleteandote",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "fleteandote",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/iconF.png",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0A2348"
+    },
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/iconF.png"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/iconF.png",
+        "backgroundColor": "#0A2348"
       },
       "predictiveBackGestureEnabled": false,
       "config": {
@@ -38,9 +38,8 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0A2348",
           "android": {
-            "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
         }
@@ -50,6 +49,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4909f413-9bcf-4e70-91ec-f46299d0fbc9"
+      }
+    },
+    "owner": "offdev"
   }
 }

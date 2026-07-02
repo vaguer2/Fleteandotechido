@@ -4,6 +4,9 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import polyline from '@mapbox/polyline';
 import { supabase } from '../../../../lib/supabase';
+// Agrega estos imports si no los tienes
+import { Alert } from 'react-native';
+import { useAuth } from '../../../../providers/AuthProvider';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAvt9AnpvHfi3GKapnoSUKRqLTNR9tAaWo';
 
@@ -18,7 +21,42 @@ export default function ScreenRastroMap() {
   const [ubicacionFletero, setUbicacionFletero] = useState(null);
   const [rutaCompleta, setRutaCompleta] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [finalizando, setFinalizando] = useState(false);
+  // Agrega esta función dentro del componente
+  const finalizarServicio = async () => {
+    if (!solicitudId) return;
 
+    Alert.alert(
+      '¿Finalizar servicio?',
+      '¿Confirmas que ya entregaste la carga en el destino?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, finalizar',
+          onPress: async () => {
+            setFinalizando(true);
+            const { error } = await supabase
+              .from('solicitud')
+              .update({
+                estado: 'completada',
+                hora_fin: new Date().toISOString(),
+              })
+              .eq('solicitud_id', solicitudId);
+
+            if (error) {
+              console.log('Error al finalizar servicio:', error);
+              Alert.alert('Error', 'No se pudo finalizar el servicio.');
+              setFinalizando(false);
+              return;
+            }
+
+            setFinalizando(false);
+            router.replace('/Screen/Home/ScreenHomeFletero');
+          }
+        }
+      ]
+    );
+  };
   async function obtenerRutaPorCalles(origenCoord, destinoCoord) {
     try {
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origenCoord.latitude},${origenCoord.longitude}&destination=${destinoCoord.latitude},${destinoCoord.longitude}&key=${GOOGLE_MAPS_API_KEY}`;
@@ -240,7 +278,6 @@ export default function ScreenRastroMap() {
 
       <View style={styles.card}>
         <View style={styles.driverRow}>
-
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{iniciales}</Text>
           </View>
@@ -258,10 +295,19 @@ export default function ScreenRastroMap() {
           <TouchableOpacity style={styles.actionBtn}>
             <Text>💬</Text>
           </TouchableOpacity>
-
         </View>
 
-
+        <TouchableOpacity
+          style={styles.btnFinalizar}
+          onPress={finalizarServicio}
+          disabled={finalizando}
+          activeOpacity={0.85}
+        >
+          {finalizando
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.btnFinalizarTexto}>✓ Finalizar servicio</Text>
+          }
+        </TouchableOpacity>
       </View>
 
     </View>
@@ -312,4 +358,17 @@ const styles = StyleSheet.create({
   },
   etaLabel: { fontSize: 13, color: '#666' },
   etaValue: { fontSize: 14, fontWeight: '600', color: '#e07030' },
+  
+  btnFinalizar: {
+    backgroundColor: '#f97316',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  btnFinalizarTexto: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });

@@ -16,5 +16,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "src/app/Screen/Detalles/ScreenDetallesFletero.js", "src/app/Screen/Map/ScreenRastroMap.js"  ]
+, "src/app/Screen/Detalles/ScreenDetallesFletero.js", "src/app/Screen/Map/ScreenRastroMap.js", "src/app/Screen/Map/ScreenIrAlOrigen.js"  ]
 }

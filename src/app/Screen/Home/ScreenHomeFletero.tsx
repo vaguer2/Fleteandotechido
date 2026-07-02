@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -51,6 +52,7 @@ export default function ScreenHomeFletero() {
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(true);
   const [servicioActivo, setServicioActivo] = useState<any>(null);
+  const [procesando, setProcesando] = useState(false);
 
   const nombre = usuario?.nombre ?? 'Fletero';
   const iniciales = nombre
@@ -60,8 +62,8 @@ export default function ScreenHomeFletero() {
     .join('')
     .toUpperCase();
 
-  // El hook de rastreo vive aquí, en una pantalla que el fletero no abandona constantemente
-  const rastreoActivo = servicioActivo !== null;
+  // Rastreo GPS solo activo cuando el servicio está EN PROGRESO, no cuando solo está aceptada
+  const rastreoActivo = servicioActivo?.estado === 'en_progreso';
   useRastreoFletero(servicioActivo?.solicitud_id, rastreoActivo);
 
   const cargarServicioActivo = useCallback(async () => {
@@ -72,7 +74,7 @@ export default function ScreenHomeFletero() {
       .select('solicitud_id, estado, precio_ajustado, precio_base, punto_ruta(tipo, direccion_texto)')
       .eq('fletero_id', usuario.fletero_id)
       .in('estado', ['aceptada', 'en_progreso'])
-      .order('hora_inicio', { ascending: false })
+      .order('creado_en', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -89,7 +91,7 @@ export default function ScreenHomeFletero() {
 
     const { data, error } = await supabase
       .from('solicitud')
-      .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, creado_en, categoria_carga(nombre), punto_ruta(tipo, direccion_texto)')
+      .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, precio_ajustado, creado_en, categoria_carga(nombre), punto_ruta(tipo, direccion_texto)')
       .eq('estado', 'publicada')
       .is('fletero_id', null)
       .lte('tonelaje_requerido', usuario.tonelaje)
@@ -114,7 +116,6 @@ export default function ScreenHomeFletero() {
 
   const toggleDisponible = async (valor: boolean) => {
     setDisponible(valor);
-
     if (!usuario?.fletero_id) return;
 
     const { error } = await supabase
@@ -129,23 +130,61 @@ export default function ScreenHomeFletero() {
     }
 
     setUsuario({ ...usuario, disponible: valor });
+    if (valor) cargarSolicitudes();
+  };
 
-    if (valor) {
-      cargarSolicitudes();
-    }
+  const iniciarServicio = () => {
+    if (!servicioActivo || !servicioActivo.solicitud_id) return;
+    router.push(`/Screen/Map/ScreenIrAlOrigen?solicitudId=${servicioActivo.solicitud_id}` as any);
+  };
+
+  const finalizarServicio = async () => {
+    if (!servicioActivo?.solicitud_id) return;
+
+    Alert.alert(
+      '¿Finalizar servicio?',
+      '¿Confirmas que ya entregaste la carga en el destino?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, finalizar',
+          onPress: async () => {
+            setProcesando(true);
+            const { error } = await supabase
+              .from('solicitud')
+              .update({
+                estado: 'completada',
+                hora_fin: new Date().toISOString(),
+              })
+              .eq('solicitud_id', servicioActivo.solicitud_id);
+
+            if (error) {
+              console.log('Error al finalizar servicio:', error);
+              Alert.alert('Error', 'No se pudo finalizar el servicio.');
+              setProcesando(false);
+              return;
+            }
+
+            setServicioActivo(null);
+            await cargarSolicitudes();
+            setProcesando(false);
+            Alert.alert('¡Servicio completado!', 'El flete fue entregado exitosamente.');
+          }
+        }
+      ]
+    );
   };
 
   const verDetalleSolicitud = (solicitudId: number) => {
     router.push(`/Screen/Detalles/ScreenDetallesFletero?solicitudId=${solicitudId}` as any);
   };
 
-  const verRastreoServicioActivo = () => {
-    if (!servicioActivo) return;
-    router.push(`/Screen/Map/ScreenRastroMap?solicitudId=${servicioActivo.solicitud_id}` as any);
-  };
-
   const obtenerDestino = (solicitud: any) => {
     return solicitud.punto_ruta?.find((p: any) => p.tipo === 'destino')?.direccion_texto ?? 'Destino';
+  };
+
+  const obtenerOrigen = (solicitud: any) => {
+    return solicitud.punto_ruta?.find((p: any) => p.tipo === 'origen')?.direccion_texto ?? 'Origen';
   };
 
   return (
@@ -161,9 +200,7 @@ export default function ScreenHomeFletero() {
               <Ionicons name="cube-outline" size={18} color="#22c55e" style={{ marginLeft: 6 }} />
             </View>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push('/Screen/Setting/ScreenSettingsFletero')}
-          >
+          <TouchableOpacity onPress={() => router.push('/Screen/Setting/ScreenSettingsFletero')}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{iniciales}</Text>
             </View>
@@ -188,22 +225,54 @@ export default function ScreenHomeFletero() {
 
       <ScrollView style={styles.content} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
 
-        {/* Tarjeta de servicio activo, si existe */}
+        {/* Tarjeta de servicio activo */}
         {servicioActivo && (
-          <TouchableOpacity
-            style={styles.cardServicioActivo}
-            onPress={verRastreoServicioActivo}
-            activeOpacity={0.85}
-          >
+          <View style={styles.cardServicioActivo}>
+
+            {/* Estado visual */}
             <View style={styles.filaServicioActivo}>
-              <View style={styles.dotVerdePulso} />
-              <Text style={styles.tituloServicioActivo}>Servicio en progreso</Text>
+              <View style={[styles.dotEstado, { backgroundColor: servicioActivo.estado === 'en_progreso' ? '#22c55e' : '#f97316' }]} />
+              <Text style={styles.tituloServicioActivo}>
+                {servicioActivo.estado === 'en_progreso' ? 'Servicio en progreso' : 'Servicio aceptado — ve al origen'}
+              </Text>
             </View>
-            <Text style={styles.destinoServicioActivo} numberOfLines={1}>
-              Hacia: {obtenerDestino(servicioActivo)}
+
+            {/* Ruta */}
+            <Text style={styles.rutaServicio} numberOfLines={1}>
+              📍 {obtenerOrigen(servicioActivo)}
             </Text>
-            <Text style={styles.linkServicioActivo}>Ver rastreo en tiempo real →</Text>
-          </TouchableOpacity>
+            <Text style={styles.rutaServicio} numberOfLines={1}>
+              🏁 {obtenerDestino(servicioActivo)}
+            </Text>
+
+            <View style={styles.botonesServicio}>
+              {servicioActivo.estado === 'aceptada' && (
+                <TouchableOpacity
+                  style={styles.btnIniciar}
+                  onPress={iniciarServicio}
+                  disabled={procesando}
+                  activeOpacity={0.85}
+                >
+                  {procesando
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.btnServicioTexto}>✓ Iniciar servicio</Text>
+                  }
+                </TouchableOpacity>
+              )}
+
+              {servicioActivo.estado === 'en_progreso' && (
+                <>
+                  <TouchableOpacity
+                    style={styles.btnVerMapa}
+                    onPress={() => router.push(`/Screen/Map/ScreenRastroMap?solicitudId=${servicioActivo.solicitud_id}` as any)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.btnServicioTexto}>🗺 Ver mapa de entrega</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
         )}
 
         <Text style={styles.sectionLabel}>SOLICITUDES DISPONIBLES PARA TI</Text>
@@ -224,54 +293,48 @@ export default function ScreenHomeFletero() {
           </Text>
         )}
 
-        {disponible &&
-          !cargandoSolicitudes &&
-          solicitudes.map((s) => {
-            const nombreCategoria = s.categoria_carga?.nombre ?? 'Otros';
-            const colores = CATEGORIA_COLOR[nombreCategoria] ?? { bg: '#f1f5f9', text: '#475569' };
-            const origen = s.punto_ruta?.find((p) => p.tipo === 'origen')?.direccion_texto ?? 'Origen';
-            const destino = s.punto_ruta?.find((p) => p.tipo === 'destino')?.direccion_texto ?? 'Destino';
+        {disponible && !cargandoSolicitudes && solicitudes.map((s) => {
+          const nombreCategoria = s.categoria_carga?.nombre ?? 'Otros';
+          const colores = CATEGORIA_COLOR[nombreCategoria] ?? { bg: '#f1f5f9', text: '#475569' };
+          const origen = s.punto_ruta?.find((p) => p.tipo === 'origen')?.direccion_texto ?? 'Origen';
+          const destino = s.punto_ruta?.find((p) => p.tipo === 'destino')?.direccion_texto ?? 'Destino';
+          const precioMostrar = (s as any).precio_ajustado ?? s.precio_base;
 
-            return (
-              <View key={s.solicitud_id} style={styles.card}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => verDetalleSolicitud(s.solicitud_id)}
-                >
-                  <View style={styles.cardTop}>
-                    <View style={[styles.badge, { backgroundColor: colores.bg }]}>
-                      <Text style={[styles.badgeText, { color: colores.text }]}>{nombreCategoria}</Text>
-                    </View>
-                    <Text style={styles.tiempo}>{tiempoRelativo(s.creado_en)}</Text>
+          return (
+            <View key={s.solicitud_id} style={styles.card}>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => verDetalleSolicitud(s.solicitud_id)}>
+                <View style={styles.cardTop}>
+                  <View style={[styles.badge, { backgroundColor: colores.bg }]}>
+                    <Text style={[styles.badgeText, { color: colores.text }]}>{nombreCategoria}</Text>
                   </View>
+                  <Text style={styles.tiempo}>{tiempoRelativo(s.creado_en)}</Text>
+                </View>
 
-                  <Text style={styles.cardTitulo} numberOfLines={1}>{s.descripcion_carga}</Text>
-                  <Text style={styles.cardRuta} numberOfLines={1}>
-                    {origen} → {destino} · {s.tonelaje_requerido} ton
+                <Text style={styles.cardTitulo} numberOfLines={1}>{s.descripcion_carga}</Text>
+                <Text style={styles.cardRuta} numberOfLines={1}>
+                  {origen} → {destino} · {s.tonelaje_requerido} ton
+                </Text>
+
+                <View style={styles.cardBottom}>
+                  <Text style={styles.distancia}>
+                    {s.distancia_km ? `~${s.distancia_km.toFixed(1)} km` : '— km'}
                   </Text>
+                  <Text style={styles.precio}>
+                    {precioMostrar ? `Oferta: $${precioMostrar} MXN` : 'Precio pendiente'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-                  <View style={styles.cardBottom}>
-                    <Text style={styles.distancia}>
-                      {s.distancia_km ? `~${s.distancia_km.toFixed(1)} km` : '— km'}
-                    </Text>
-                    <Text style={styles.precio}>
-                      {s.precio_base
-                        ? `Precio base: $${s.precio_base.toLocaleString('es-MX')} MXN`
-                        : 'Precio pendiente'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.botonVerDetalle}
-                  onPress={() => verDetalleSolicitud(s.solicitud_id)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.textoBotonVerDetalle}>Ver detalles</Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+              <TouchableOpacity
+                style={styles.botonVerDetalle}
+                onPress={() => verDetalleSolicitud(s.solicitud_id)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.textoBotonVerDetalle}>Ver detalles</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
@@ -284,73 +347,26 @@ const styles = StyleSheet.create({
   saludo: { color: '#94a3b8', fontSize: 13 },
   nombreRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   nombre: { color: '#fff', fontSize: 20, fontWeight: '700' },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f97316',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f97316', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  toggleCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  toggleCard: { backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleTitle: { color: '#fff', fontWeight: '700', fontSize: 14, marginBottom: 4 },
   toggleSub: { color: '#94a3b8', fontSize: 12 },
   content: { flex: 1, backgroundColor: '#f8fafc' },
   sectionLabel: { fontSize: 12, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.5, marginBottom: 14 },
 
-  cardServicioActivo: {
-    backgroundColor: '#0f172a',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  filaServicioActivo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dotVerdePulso: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#22c55e',
-    marginRight: 8,
-  },
-  tituloServicioActivo: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  destinoServicioActivo: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  linkServicioActivo: {
-    color: '#f97316',
-    fontWeight: '700',
-    fontSize: 13,
-  },
+  cardServicioActivo: { backgroundColor: '#0f172a', borderRadius: 16, padding: 16, marginBottom: 20 },
+  filaServicioActivo: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  dotEstado: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  tituloServicioActivo: { color: '#fff', fontWeight: '700', fontSize: 14, flex: 1 },
+  rutaServicio: { color: '#cbd5e1', fontSize: 12, marginBottom: 4 },
+  botonesServicio: { marginTop: 14, gap: 10 },
+  btnIniciar: { backgroundColor: '#22c55e', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  btnVerMapa: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  btnFinalizar: { backgroundColor: '#f97316', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  btnServicioTexto: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   badge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20 },
   badgeText: { fontSize: 12, fontWeight: '700' },
@@ -360,16 +376,6 @@ const styles = StyleSheet.create({
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   distancia: { fontSize: 13, color: '#64748b' },
   precio: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
-  botonVerDetalle: {
-    backgroundColor: '#f97316',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  textoBotonVerDetalle: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  botonVerDetalle: { backgroundColor: '#f97316', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 14 },
+  textoBotonVerDetalle: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
