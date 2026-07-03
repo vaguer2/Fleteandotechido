@@ -186,7 +186,75 @@ export default function ScreenHomeFletero() {
   const obtenerOrigen = (solicitud: any) => {
     return solicitud.punto_ruta?.find((p: any) => p.tipo === 'origen')?.direccion_texto ?? 'Origen';
   };
+  // Agrega esto ANTES del return principal, después de todos los hooks y estados
+  if (!usuario?.verificado) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor="#0b2545" />
 
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.saludo}>Hola, Fletero</Text>
+              <View style={styles.nombreRow}>
+                <Text style={styles.nombre}>{nombre}</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/Screen/Setting/ScreenSettingsFletero')}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{iniciales}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center' }}>
+          <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 32 }}>
+            <Ionicons name="shield-checkmark-outline" size={72} color="#94a3b8" />
+            <Text style={{ fontSize: 20, fontWeight: '700', color: '#ffffff', marginTop: 20, textAlign: 'center' }}>
+              Cuenta no verificada
+            </Text>
+            <Text style={{ fontSize: 14, color: '#64748b', marginTop: 10, textAlign: 'center', lineHeight: 22 }}>
+              Para empezar a recibir solicitudes de flete necesitas subir tus documentos y esperar la aprobacion del equipo de FleteandoTe.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#f97316',
+              borderRadius: 14,
+              paddingVertical: 16,
+              paddingHorizontal: 32,
+              alignItems: 'center',
+              width: '100%',
+            }}
+            onPress={() => router.push('/Screen/Documento/ScreenDocumento')}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+              Subir mis documentos
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{
+            backgroundColor: '#FEF9C3',
+            borderRadius: 12,
+            padding: 16,
+            marginTop: 20,
+            width: '100%',
+            flexDirection: 'row',
+            gap: 10,
+            alignItems: 'flex-start',
+          }}>
+            <Ionicons name="time-outline" size={20} color="#92400E" />
+            <Text style={{ flex: 1, color: '#92400E', fontSize: 13, lineHeight: 18 }}>
+              Una vez que subas tus documentos, el equipo los revisara en menos de 24 horas. Cuando estes verificado podras ver y aceptar solicitudes.
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#0b2545" />
@@ -378,4 +446,36 @@ const styles = StyleSheet.create({
   precio: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
   botonVerDetalle: { backgroundColor: '#f97316', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 14 },
   textoBotonVerDetalle: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  avisoVerificacion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 4,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  avisoIcono: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FDE68A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avisoTitulo: {
+    color: '#92400E',
+    fontWeight: '700',
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  avisoSub: {
+    color: '#B45309',
+    fontSize: 12,
+    lineHeight: 16,
+  },
 });
