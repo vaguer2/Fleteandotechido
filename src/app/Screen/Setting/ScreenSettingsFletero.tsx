@@ -1,23 +1,21 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
-
-const MENU_ITEMS = [
-    { id: 'datos', label: 'Datos personales' },
-    { id: 'vehiculo', label: 'Datos del vehículo' },
-    { id: 'documentos', label: 'Mis documentos' },
-    { id: 'billetera', label: 'Billetera' },
-    { id: 'notificaciones', label: 'Notificaciones' },
-    { id: 'seguridad', label: 'Seguridad' },
-    { id: 'ayuda', label: 'Ayuda y soporte' },
-];
 
 export default function ScreenSettingsFletero() {
     const { usuario } = useAuth();
     const router = useRouter();
-
+    const MENU_ITEMS = [
+        { id: 'datos', label: 'Datos personales' },
+        { id: 'vehiculo', label: 'Datos del vehículo' },
+        { id: 'documentos', label: 'Mis documentos' },
+        { id: 'billetera', label: 'Billetera' },
+        { id: 'notificaciones', label: 'Notificaciones' },
+        { id: 'historial', label: 'Historial', onPress: () => router.push('/Screen/Historial/ScreenHistorialFletero') },
+        { id: 'ayuda', label: 'Ayuda y soporte' },
+    ];
     const perfil = {
         nombre: usuario?.nombre || 'Sin nombre',
         correo: usuario?.email || 'Sin correo',
@@ -85,6 +83,7 @@ export default function ScreenSettingsFletero() {
                         key={item.id}
                         style={[styles.menuItem, index < MENU_ITEMS.length - 1 && styles.menuItemBorder]}
                         activeOpacity={0.7}
+                        onPress={item.onPress}
                     >
                         <Text style={styles.menuLabel}>{item.label}</Text>
                         <Text style={styles.menuArrow}>›</Text>

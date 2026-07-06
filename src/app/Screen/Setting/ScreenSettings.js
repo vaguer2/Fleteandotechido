@@ -4,18 +4,20 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 //import { EstadoGlobalContext } from '../../../components/Context/EstadoGlobalUser';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
-const MENU_ITEMS = [
-  { id: 'datos', label: 'Datos personales' },
-  { id: 'direcciones', label: 'Mis direcciones' },
-  { id: 'pago', label: 'Métodos de pago' },
-  { id: 'notificaciones', label: 'Notificaciones' },
-  { id: 'seguridad', label: 'Seguridad' },
-  { id: 'ayuda', label: 'Ayuda y soporte' },
-];
+
 
 export default function ScreenSettings() {
-  const { /*setLogin, setUsuario, setEsTransportista, */usuario } = useAuth();
+  const { usuario } = useAuth();
   const router = useRouter();
+  
+  const MENU_ITEMS = [
+    { id: 'datos', label: 'Datos personales' },
+    { id: 'direcciones', label: 'Mis direcciones' },
+    { id: 'historial', label: 'Historial', onPress: () => router.push('/Screen/Historial/ScreenHistorialUsuario') },
+    { id: 'notificaciones', label: 'Notificaciones' },
+    { id: 'seguridad', label: 'Seguridad' },
+    { id: 'ayuda', label: 'Ayuda y soporte' },
+  ];
 
   // TODO: reemplazar con datos de la base de datos
   const perfil = {
@@ -65,10 +67,12 @@ export default function ScreenSettings() {
       {/* Menú */}
       <View style={styles.menuCard}>
         {MENU_ITEMS.map((item, index) => (
+          
           <TouchableOpacity
             key={item.id}
             style={[styles.menuItem, index < MENU_ITEMS.length - 1 && styles.menuItemBorder]}
             activeOpacity={0.7}
+            onPress={item.onPress}
           >
             <Text style={styles.menuLabel}>{item.label}</Text>
             <Text style={styles.menuArrow}>›</Text>
