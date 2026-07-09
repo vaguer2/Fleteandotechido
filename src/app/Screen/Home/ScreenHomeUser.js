@@ -34,7 +34,7 @@ export default function ScreenHomeUsers() {
 
             const { data, error } = await supabase
                 .from('solicitud')
-                .select('*, categoria_carga(nombre), punto_ruta(*), fletero(nombre, calificacion_promedio, tipo_vehiculo)')
+                .select('*, categoria_carga(nombre), punto_ruta(*), fletero(nombre, calificacion_promedio, tipo_vehiculo), calificacion(calificacion_id)')
                 .eq('usuario_id', usuario.usuario_id)
                 .neq('estado', 'borrador')
                 .order('creado_en', { ascending: false });
@@ -60,8 +60,6 @@ export default function ScreenHomeUsers() {
         cargarSolicitudes();
     }, [usuario]);
 
-    const solicitarFlete = () => router.push('/Screen/Pedido/ScreenPedidos');
-
     const irAlMapaOEsperar = (solicitud) => {
         if (solicitud.estado === 'en_progreso') {
             router.push({
@@ -69,7 +67,6 @@ export default function ScreenHomeUsers() {
                 params: { solicitudId: solicitud.solicitud_id },
             });
         }
-        // 'aceptada' y 'publicada' no navegan — todavía no hay mapa útil que mostrar
     };
 
     const formatearFecha = (fechaISO) => {
@@ -103,7 +100,7 @@ export default function ScreenHomeUsers() {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.btnPrincipal} onPress={solicitarFlete} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.btnPrincipal} onPress={() => router.push('/Screen/Pedido/ScreenPedidos')} activeOpacity={0.85}>
                 <Text style={styles.btnPrincipalText}>Solicitar nuevo flete</Text>
             </TouchableOpacity>
 
@@ -151,7 +148,7 @@ export default function ScreenHomeUsers() {
                         {tieneChat && (
                             <TouchableOpacity
                                 style={styles.btnChat}
-                                onPress={() => router.push(`Screen/Mensaje/ScreenMensajes?solicitudId=${item.solicitud_id}`)}
+                                onPress={() => router.push(`/Screen/Mensaje/ScreenMensajes?solicitudId=${item.solicitud_id}`)}
                                 activeOpacity={0.85}
                             >
                                 <Text style={styles.btnChatTexto}>💬 Chatear con el fletero</Text>
@@ -173,16 +170,34 @@ export default function ScreenHomeUsers() {
                 const colors = badgeColor(item.estado);
                 return (
                     <View key={item.solicitud_id} style={styles.card}>
-                        <View style={styles.cardIcono} />
-                        <View style={styles.cardInfo}>
-                            <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
-                            <Text style={styles.cardSub} numberOfLines={1}>
-                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
-                            </Text>
+                        <View style={styles.cardContenido}>
+                            <View style={styles.cardIcono} />
+                            <View style={styles.cardInfo}>
+                                <Text style={styles.cardTitulo}>{obtenerTitulo(item)}</Text>
+                                <Text style={styles.cardSub} numberOfLines={1}>
+                                    {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
+                                </Text>
+                            </View>
+                            <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+                                <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
+                            </View>
                         </View>
-                        <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-                            <Text style={[styles.badgeText, { color: colors.text }]}>{colors.label}</Text>
-                        </View>
+
+                        {item.estado === 'completada' && !item.calificacion?.calificacion_id && (
+                            <TouchableOpacity
+                                style={styles.btnCalificar}
+                                onPress={() => router.push({
+                                    pathname: '/Screen/Calificacion/ScreenCalificacion',
+                                    params: {
+                                        solicitudId: item.solicitud_id,
+                                        fleteroNombre: item.fletero?.nombre ?? 'Tu fletero',
+                                    }
+                                })}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.btnCalificarTexto}>⭐ Calificar servicio</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 );
             })}
@@ -193,141 +208,54 @@ export default function ScreenHomeUsers() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F7F8FA',
-    },
+    container: { flex: 1, backgroundColor: '#F7F8FA' },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#1A1A2E',
-        paddingHorizontal: 20,
-        paddingTop: 56,
-        paddingBottom: 24,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: '#1A1A2E', paddingHorizontal: 20, paddingTop: 56, paddingBottom: 24,
     },
-    saludoSub: {
-        color: '#B0B8CC',
-        fontSize: 14,
-    },
-    saludoNombre: {
-        color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: '700',
-    },
+    saludoSub: { color: '#B0B8CC', fontSize: 14 },
+    saludoNombre: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
     avatarCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#FF6B00',
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: 44, height: 44, borderRadius: 22,
+        backgroundColor: '#FF6B00', alignItems: 'center', justifyContent: 'center',
     },
-    avatarLetra: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '700',
-    },
+    avatarLetra: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
     btnPrincipal: {
-        margin: 20,
-        backgroundColor: '#FF6B00',
-        borderRadius: 12,
-        paddingVertical: 16,
-        alignItems: 'center',
-        shadowColor: '#FF6B00',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        margin: 20, backgroundColor: '#FF6B00', borderRadius: 12,
+        paddingVertical: 16, alignItems: 'center',
+        shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
     },
-    btnPrincipalText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '700',
-    },
+    btnPrincipalText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
     seccionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginTop: 8,
-        marginBottom: 10,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingHorizontal: 20, marginTop: 8, marginBottom: 10,
     },
-    seccionTitulo: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1A1A2E',
-    },
-    textoVacio: {
-        fontSize: 13,
-        color: '#8A8FA8',
-        paddingHorizontal: 20,
-        marginBottom: 16,
-    },
+    seccionTitulo: { fontSize: 16, fontWeight: '700', color: '#1A1A2E' },
+    textoVacio: { fontSize: 13, color: '#8A8FA8', paddingHorizontal: 20, marginBottom: 16 },
     card: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        marginHorizontal: 20,
-        marginBottom: 10,
-        borderRadius: 12,
-        padding: 14,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
+        backgroundColor: '#FFFFFF', marginHorizontal: 20, marginBottom: 10,
+        borderRadius: 12, padding: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
     },
-    cardIcono: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        backgroundColor: '#F0F1F5',
-        marginRight: 12,
-    },
-    cardInfo: {
-        flex: 1,
-    },
-    cardTitulo: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#1A1A2E',
-        marginBottom: 3,
-    },
-    cardSub: {
-        fontSize: 12,
-        color: '#8A8FA8',
-    },
-    cardFletero: {
-        fontSize: 11,
-        color: '#FF6B00',
-        fontWeight: '600',
-        marginTop: 2,
-    },
-    badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-    },
-    badgeText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    cardContenido: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
+    cardContenido: { flexDirection: 'row', alignItems: 'center' },
+    cardIcono: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#F0F1F5', marginRight: 12 },
+    cardInfo: { flex: 1 },
+    cardTitulo: { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 3 },
+    cardSub: { fontSize: 12, color: '#8A8FA8' },
+    cardFletero: { fontSize: 11, color: '#FF6B00', fontWeight: '600', marginTop: 2 },
+    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    badgeText: { fontSize: 12, fontWeight: '600' },
     btnChat: {
-        backgroundColor: '#1A1A2E',
-        borderRadius: 10,
-        paddingVertical: 10,
-        alignItems: 'center',
-        marginTop: 10,
-        paddingHorizontal:20
+        backgroundColor: '#1A1A2E', borderRadius: 10,
+        paddingVertical: 10, alignItems: 'center', marginTop: 10,
     },
-    btnChatTexto: {
-        color: '#FFFFFF',
-        fontSize: 13,
-        fontWeight: '600',
+    btnChatTexto: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+    btnCalificar: {
+        backgroundColor: '#FFF7ED', borderRadius: 10,
+        paddingVertical: 10, alignItems: 'center',
+        marginTop: 10, borderWidth: 1, borderColor: '#F97316',
     },
+    btnCalificarTexto: { color: '#F97316', fontSize: 13, fontWeight: '600' },
 });

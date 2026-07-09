@@ -63,10 +63,12 @@ export default function AuthProvider(props: Props) {
                         .single();
 
                     if (fleteroData) {
+                        console.log('fleteroData completo:', JSON.stringify(fleteroData));
                         setUsuario(fleteroData);
                         setEsTransportista(true);
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
-                    } else {
+                    }
+                     else {
                         await supabase.auth.signOut();
                         router.replace('/Screen/Login/ScreenStart');
                     }
@@ -124,6 +126,42 @@ export default function AuthProvider(props: Props) {
             authListener?.subscription.unsubscribe();
         };
     }, []);
+
+
+
+    // Suscripción Realtime para actualizar datos del fletero en tiempo real
+    useEffect(() => {
+        if (!usuario?.fletero_id) {
+            console.log('No hay fletero_id, no se suscribe');
+            return;
+        }
+
+        console.log('Suscribiendo a cambios del fletero:', usuario.fletero_id);
+
+        const canal = supabase
+            .channel(`fletero_${usuario.fletero_id}`)
+            .on('postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'fletero',
+                    filter: `fletero_id=eq.${usuario.fletero_id}`
+                },
+                (payload) => {
+                    console.log('Cambio detectado en fletero:', payload.new);
+                    setUsuario((prev: any) => ({ ...prev, ...payload.new }));
+                }
+            )
+            .subscribe((status) => {
+                console.log('Estado de la suscripcion:', status);
+            });
+
+        return () => {
+            supabase.removeChannel(canal);
+        };
+    }, [usuario?.fletero_id]);
+
+
 
     return (
         <AuthContext.Provider value={{

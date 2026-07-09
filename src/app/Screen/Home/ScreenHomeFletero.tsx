@@ -88,10 +88,11 @@ export default function ScreenHomeFletero() {
 
   const cargarSolicitudes = useCallback(async () => {
     if (!usuario?.fletero_id) return;
-
+    console.log('usuario.tonelaje:', usuario.tonelaje);
+    console.log('tipo:', typeof usuario.tonelaje);
     const { data, error } = await supabase
       .from('solicitud')
-      .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, precio_ajustado, creado_en, categoria_carga(nombre), punto_ruta(tipo, direccion_texto)')
+      .select('solicitud_id, descripcion_carga, tonelaje_requerido, distancia_km, precio_base, precio_ajustado, creado_en, categoria_carga!categoria_id(nombre), punto_ruta(tipo, direccion_texto)')
       .eq('estado', 'publicada')
       .is('fletero_id', null)
       .lte('tonelaje_requerido', usuario.tonelaje)
@@ -101,7 +102,8 @@ export default function ScreenHomeFletero() {
       console.error('Error al cargar solicitudes:', error);
       return;
     }
-
+    console.log('Data:', JSON.stringify(data));
+    console.log('Error:', JSON.stringify(error));
     setSolicitudes((data as any) ?? []);
   }, [usuario]);
 
