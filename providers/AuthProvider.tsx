@@ -1,6 +1,7 @@
 import { Session } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { registrarTokenNotificaciones } from '../src/hooks/useNotificaciones';
 import { supabase } from '../lib/supabase';
 
 type AuthData = {
@@ -39,7 +40,6 @@ export default function AuthProvider(props: Props) {
     useEffect(() => {
         async function fetchSession() {
             const { error, data } = await supabase.auth.getSession();
-
             if (error) throw error;
 
             if (data.session) {
@@ -53,7 +53,9 @@ export default function AuthProvider(props: Props) {
                     .single();
 
                 if (usuarioData) {
+                    console.log('*** Entrando al bloque de usuario, registrando token...');
                     setUsuario(usuarioData);
+                    await registrarTokenNotificaciones(usuarioData.usuario_id);
                     router.replace('/Screen/Home/ScreenHomeUser');
                 } else {
                     const { data: fleteroData } = await supabase
@@ -63,12 +65,10 @@ export default function AuthProvider(props: Props) {
                         .single();
 
                     if (fleteroData) {
-                        console.log('fleteroData completo:', JSON.stringify(fleteroData));
                         setUsuario(fleteroData);
                         setEsTransportista(true);
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
-                    }
-                     else {
+                    } else {
                         await supabase.auth.signOut();
                         router.replace('/Screen/Login/ScreenStart');
                     }
@@ -97,6 +97,7 @@ export default function AuthProvider(props: Props) {
 
                 if (usuarioData) {
                     setUsuario(usuarioData);
+                    await registrarTokenNotificaciones(usuarioData.usuario_id);
                     router.replace('/Screen/Home/ScreenHomeUser');
                 } else {
                     const { data: fleteroData } = await supabase
@@ -126,8 +127,6 @@ export default function AuthProvider(props: Props) {
             authListener?.subscription.unsubscribe();
         };
     }, []);
-
-
 
     // Suscripción Realtime para actualizar datos del fletero en tiempo real
     useEffect(() => {
@@ -160,8 +159,6 @@ export default function AuthProvider(props: Props) {
             supabase.removeChannel(canal);
         };
     }, [usuario?.fletero_id]);
-
-
 
     return (
         <AuthContext.Provider value={{

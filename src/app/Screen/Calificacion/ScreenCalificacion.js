@@ -55,7 +55,7 @@ export default function ScreenCalificaciones() {
                 [{ text: 'OK', onPress: () => router.replace('/Screen/Home/ScreenHomeUser') }]
             );
         } catch (err) {
-            console.log('Error al enviar calificacion:', err);
+            //console.log('Error al enviar calificacion:', err);
             Alert.alert('Error', 'No se pudo enviar la calificacion. Intenta de nuevo.');
         } finally {
             setEnviando(false);

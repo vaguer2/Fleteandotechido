@@ -36,19 +36,19 @@ export default function ScreenMapSelectionUser() {
             const json = await response.json();
 
             // Log de depuración para ver exactamente qué responde Google
-            console.log('Geocoding status:', json.status);
-            console.log('Geocoding results length:', json.results?.length);
+            //console.log('Geocoding status:', json.status);
+            //console.log('Geocoding results length:', json.results?.length);
 
             if (json.status === 'OK' && json.results && json.results.length > 0) {
                 return json.results[0].formatted_address;
             }
 
             // Si Google no encuentra nada, mostramos el status real para depurar
-            console.log('Geocoding fallo completo:', JSON.stringify(json));
+            //console.log('Geocoding fallo completo:', JSON.stringify(json));
             return `Sin dirección (${json.status})`;
 
         } catch (error) {
-            console.log('Error al obtener dirección:', error);
+            //console.log('Error al obtener dirección:', error);
             return 'No se pudo obtener la dirección';
         }
     };
@@ -132,7 +132,7 @@ export default function ScreenMapSelectionUser() {
             }
             return null;
         } catch (error) {
-            console.log('Error al calcular distancia:', error);
+            //console.log('Error al calcular distancia:', error);
             return null;
         }
     };
@@ -171,7 +171,7 @@ export default function ScreenMapSelectionUser() {
             ]);
 
             if (errorPuntoRuta) {
-                console.log('Error al guardar punto_ruta:', errorPuntoRuta);
+                //console.log('Error al guardar punto_ruta:', errorPuntoRuta);
                 Alert.alert('Error', 'No se pudo guardar la ruta. Intenta de nuevo.');
                 return;
             }
@@ -185,7 +185,7 @@ export default function ScreenMapSelectionUser() {
                     .eq('solicitud_id', solicitudId);
 
                 if (errorDistancia) {
-                    console.log('Error al actualizar distancia_km:', errorDistancia);
+                    //console.log('Error al actualizar distancia_km:', errorDistancia);
                 }
             }
 
@@ -195,7 +195,7 @@ export default function ScreenMapSelectionUser() {
             });
 
         } catch (error) {
-            console.log('Error general:', error);
+            //console.log('Error general:', error);
             Alert.alert('Error', 'Ocurrió un problema al guardar la ruta.');
         } finally {
             setGuardando(false);

@@ -5,14 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/iconF.png",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0A2348"
-    },
     "ios": {
       "icon": "./assets/iconF.png"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/iconF.png",
         "backgroundColor": "#0A2348"
@@ -26,7 +23,10 @@
       "package": "com.offdev.FleteandoTe",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -40,11 +40,19 @@
         {
           "backgroundColor": "#0A2348",
           "android": {
-            "imageWidth": 76
+            "image": "./assets/iconF.png",
+            "imageWidth": 150
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/iconF.png",
+          "color": "#0A2348"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

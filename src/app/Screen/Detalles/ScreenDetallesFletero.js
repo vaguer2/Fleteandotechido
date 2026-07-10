@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
+import { enviarNotificacion, obtenerTokenCliente } from '../../../hooks/useNotificaciones';
+
 
 export default function ScreenDetallesFletero() {
   const router = useRouter();
@@ -34,7 +36,7 @@ export default function ScreenDetallesFletero() {
         .single();
 
       if (error || !data) {
-        console.log('Error al traer la solicitud:', error);
+        //console.log('Error al traer la solicitud:', error);
         setCargando(false);
         return;
       }
@@ -63,15 +65,28 @@ export default function ScreenDetallesFletero() {
         .update({
           fletero_id: usuario.fletero_id,
           estado: 'aceptada',
-          // hora_inicio ya NO va aquí — se pone cuando inicie el servicio real
         })
         .eq('solicitud_id', solicitudId)
         .is('fletero_id', null);
 
       if (error) {
-        console.log('Error al aceptar solicitud:', error);
         Alert.alert('Error', 'No se pudo aceptar la solicitud. Intenta de nuevo.');
         return;
+      }
+
+      console.log('UPDATE exitoso, obteniendo token...');
+      const tokenCliente = await obtenerTokenCliente(solicitudId);
+      console.log('Token obtenido en aceptarSolicitud:', tokenCliente);
+
+      if (!tokenCliente) {
+        console.log('Token es null, no se enviará notificación');
+      } else {
+        await enviarNotificacion(
+          tokenCliente,
+          '¡Tu flete fue aceptado! 🚛',
+          `${usuario?.nombre ?? 'Un fletero'} aceptó tu solicitud y está en camino al punto de recogida.`
+        );
+        console.log('Notificación enviada exitosamente');
       }
 
       const { data: solicitudActualizada } = await supabase
@@ -91,7 +106,7 @@ export default function ScreenDetallesFletero() {
       );
 
     } catch (error) {
-      console.log('Error general:', error);
+      console.log('Error general al aceptarSolicitud:', error);
       Alert.alert('Error', 'Ocurrió un problema al aceptar la solicitud.');
     } finally {
       setAceptando(false);

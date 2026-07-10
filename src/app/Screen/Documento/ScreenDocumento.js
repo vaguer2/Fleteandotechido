@@ -54,7 +54,7 @@ export default function ScreenDocumento() {
         .eq('fletero_id', usuario.fletero_id);
 
       if (error) {
-        console.log('Error al verificar documentos:', error);
+        //console.log('Error al verificar documentos:', error);
         setCargandoEstado(false);
         return;
       }
@@ -173,7 +173,7 @@ export default function ScreenDocumento() {
       }));
 
     } catch (error) {
-      console.log('Error al subir:', error);
+      //console.log('Error al subir:', error);
       Alert.alert('Error', 'No se pudo subir el documento. Intenta de nuevo.');
       setDocumentos((prev) => ({ ...prev, [key]: null }));
     }

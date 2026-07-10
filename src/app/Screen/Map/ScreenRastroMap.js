@@ -7,6 +7,7 @@ import { supabase } from '../../../../lib/supabase';
 // Agrega estos imports si no los tienes
 import { Alert } from 'react-native';
 import { useAuth } from '../../../../providers/AuthProvider';
+import { enviarNotificacion, obtenerTokenCliente } from '@/hooks/useNotificaciones';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAvt9AnpvHfi3GKapnoSUKRqLTNR9tAaWo';
 
@@ -49,6 +50,12 @@ export default function ScreenRastroMap() {
               setFinalizando(false);
               return;
             }
+            const tokenCliente = await obtenerTokenCliente(solicitudId);
+            await enviarNotificacion(
+              tokenCliente,
+              'Tu cargamento fue entregado.',
+              'El servicio se completo exitosamente. No olvides de calificar a tu fletero'
+            )
 
             setFinalizando(false);
             router.replace('/Screen/Home/ScreenHomeFletero');
@@ -292,7 +299,11 @@ export default function ScreenRastroMap() {
           <TouchableOpacity style={styles.actionBtn}>
             <Text>📞</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn}>
+
+          <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={()=> router.push(`/Screen/Mensaje/ScreenMensajes?solicitudId=${solicitudId}`)}
+          >
             <Text>💬</Text>
           </TouchableOpacity>
         </View>

@@ -34,9 +34,9 @@ export default function ScreenUserRegister() {
 
         //--------------------------------------------
         //verificacion de que los datos estan llegando correctamente a la db:
-        console.log('Iniciando registro...');
-        console.log('Email:', mail);
-        console.log('Nombre:', name);
+        //console.log('Iniciando registro...');
+        //console.log('Email:', mail);
+        //console.log('Nombre:', name);
         //--------------------------------------------
 
 
@@ -63,13 +63,13 @@ export default function ScreenUserRegister() {
         try {
             // 1. Crear usuario en Supabase Auth
 
-            console.log('Llamando a supabase.auth.signUp...');
+            //console.log('Llamando a supabase.auth.signUp...');
 
             const { data, error } = await supabase.auth.signUp({
                 email: cleanEmail,
                 password: password,
             });
-            console.log('Respuesta de signUp:', JSON.stringify(data));
+            //console.log('Respuesta de signUp:', JSON.stringify(data));
             console.log('Error de signUp:', JSON.stringify(error));
 
             if (error) {

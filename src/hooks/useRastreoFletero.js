@@ -9,28 +9,28 @@ export function useRastreoFletero(solicitudId, activo) {
     const suscripcionRef = useRef(null);
 
     useEffect(() => {
-        console.log('=== useRastreoFletero ejecutado ===');
-        console.log('activo:', activo);
+        //console.log('=== useRastreoFletero ejecutado ===');
+        //console.log('activo:', activo);
         console.log('solicitudId:', solicitudId);
         console.log('usuario?.fletero_id:', usuario?.fletero_id);
 
         async function iniciarRastreo() {
             if (!activo || !solicitudId || !usuario?.fletero_id) {
-                console.log('Rastreo NO iniciado — condiciones no cumplidas');
+                //console.log('Rastreo NO iniciado — condiciones no cumplidas');
                 return;
             }
 
-            console.log('Solicitando permisos de ubicación...');
+            //console.log('Solicitando permisos de ubicación...');
             const { status } = await Location.requestForegroundPermissionsAsync();
-            console.log('Estado del permiso:', status);
+            //console.log('Estado del permiso:', status);
 
             if (status !== 'granted') {
                 setError('Permiso de ubicación denegado');
-                console.log('Permiso DENEGADO, deteniendo rastreo');
+               //console.log('Permiso DENEGADO, deteniendo rastreo');
                 return;
             }
 
-            console.log('Iniciando watchPositionAsync...');
+            //console.log('Iniciando watchPositionAsync...');
             suscripcionRef.current = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.High,
@@ -38,7 +38,7 @@ export function useRastreoFletero(solicitudId, activo) {
                     distanceInterval: 15,
                 },
                 async (ubicacion) => {
-                    console.log('Nueva ubicación detectada:', ubicacion.coords.latitude, ubicacion.coords.longitude);
+                    //console.log('Nueva ubicación detectada:', ubicacion.coords.latitude, ubicacion.coords.longitude);
 
                     const { error: errorInsert } = await supabase
                         .from('ubicacion_fletero')
@@ -52,12 +52,12 @@ export function useRastreoFletero(solicitudId, activo) {
                     if (errorInsert) {
                         console.log('Error al subir ubicación:', JSON.stringify(errorInsert));
                     } else {
-                        console.log('Ubicación subida exitosamente');
+                        //console.log('Ubicación subida exitosamente');
                     }
                 }
             );
 
-            console.log('watchPositionAsync configurado correctamente');
+            //console.log('watchPositionAsync configurado correctamente');
         }
 
         iniciarRastreo();

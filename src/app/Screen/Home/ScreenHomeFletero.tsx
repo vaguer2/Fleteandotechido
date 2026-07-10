@@ -325,7 +325,7 @@ export default function ScreenHomeFletero() {
                 >
                   {procesando
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.btnServicioTexto}>✓ Iniciar servicio</Text>
+                    : <Text style={styles.btnServicioTexto}>✓ Llegué al punto de carga</Text>
                   }
                 </TouchableOpacity>
               )}

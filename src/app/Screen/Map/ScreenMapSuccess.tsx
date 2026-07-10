@@ -58,7 +58,7 @@ export default function ScreenMapSuccess() {
         setTiempoEstimado(`${minutos}-${minutos + 10} min`);
       }
     } catch (error) {
-      console.log('Error al obtener la ruta:', error);
+      //console.log('Error al obtener la ruta:', error);
     }
   }
 
@@ -77,7 +77,7 @@ export default function ScreenMapSuccess() {
         .single();
 
       if (errorSolicitud || !solicitud) {
-        console.log('Error al traer la solicitud:', errorSolicitud);
+        //console.log('Error al traer la solicitud:', errorSolicitud);
         setCargandoMapa(false);
         return;
       }
