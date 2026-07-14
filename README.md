@@ -25,12 +25,5 @@ El las siguientes lineas encontraras la informacion necesaria para buscar la doc
 2. Start the app
 
    ```bash
-   npx expo start
+   npx expo start --dev-client
    ```
-# Get a fresh project
-
-When you're ready, run:
-
-```bash
-npx run dev
-```
