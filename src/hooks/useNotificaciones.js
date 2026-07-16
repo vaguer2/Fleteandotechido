@@ -76,6 +76,53 @@ export async function enviarNotificacion(pushToken, titulo, mensaje) {
         console.log('Error al enviar notificación:', error);
     }
 }
+export async function registrarTokenFletero(fleteroId) {
+    try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== 'granted') return null;
+
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: '4909f413-9bcf-4e70-91ec-f46299d0fbc9',
+        });
+
+        await supabase
+            .from('fletero')
+            .update({ push_token: tokenData.data })
+            .eq('fletero_id', fleteroId);
+
+        return tokenData.data;
+    } catch (error) {
+        console.log('Error al registrar token del fletero:', error);
+        return null;
+    }
+}
+export async function obtenerTokenFletero(solicitudId) {
+    try {
+        const { data: solicitud } = await supabase
+            .from('solicitud')
+            .select('fletero_id')
+            .eq('solicitud_id', solicitudId)
+            .single();
+
+        if (!solicitud?.fletero_id) return null;
+
+        const { data: fletero } = await supabase
+            .from('fletero')
+            .select('push_token')
+            .eq('fletero_id', solicitud.fletero_id)
+            .single();
+
+        return fletero?.push_token ?? null;
+    } catch (error) {
+        console.log('Error al obtener token del fletero:', error);
+        return null;
+    }
+}
 
 // Obtiene el push_token del cliente de una solicitud específica
 //si llega ahaber un problema con las notificaciones solo hay que descomentar los console.log que se comentaron

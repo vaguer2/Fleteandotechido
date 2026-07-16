@@ -8,12 +8,10 @@ export default function ScreenSettingsFletero() {
     const { usuario } = useAuth();
     const router = useRouter();
     const MENU_ITEMS = [
-        { id: 'datos', label: 'Datos personales' },
-        { id: 'vehiculo', label: 'Datos del vehículo' },
+        { id: 'datos', label: 'Datos personales', onPress: () => router.push('/Screen/Setting/ScreenSubirDatosFletero' as any) },
+        { id: 'vehiculo', label: 'Datos del vehículo', onPress: () => router.push('/Screen/Setting/ScreenSubirVehiculo' as any) },
         { id: 'documentos', label: 'Mis documentos' },
-        { id: 'billetera', label: 'Billetera' },
-        { id: 'notificaciones', label: 'Notificaciones' },
-        { id: 'historial', label: 'Historial', onPress: () => router.push('/Screen/Historial/ScreenHistorialFletero') },
+        { id: 'historial', label: 'Historial', onPress: () => router.push('/Screen/Historial/ScreenHistorialFletero' as any) },
         { id: 'ayuda', label: 'Ayuda y soporte' },
     ];
     const perfil = {

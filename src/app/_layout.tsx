@@ -1,3 +1,4 @@
+//C:\Fleteandote\Fleteandotechido\src\app\_layout.tsx
 import { Stack } from 'expo-router';
 import AuthProvider from '../../providers/AuthProvider';
 

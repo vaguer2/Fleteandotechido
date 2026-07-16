@@ -1,7 +1,8 @@
+//C:\Fleteandote\Fleteandotechido\providers\AuthProvider.tsx
 import { Session } from '@supabase/supabase-js';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { registrarTokenNotificaciones } from '../src/hooks/useNotificaciones';
+import { registrarTokenNotificaciones,registrarTokenFletero } from '../src/hooks/useNotificaciones';
 import { supabase } from '../lib/supabase';
 
 type AuthData = {
@@ -67,6 +68,8 @@ export default function AuthProvider(props: Props) {
                     if (fleteroData) {
                         setUsuario(fleteroData);
                         setEsTransportista(true);
+                        // Registrar token de notificaciones para el fletero
+                        await registrarTokenFletero(fleteroData.fletero_id);
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
                     } else {
                         await supabase.auth.signOut();
@@ -109,6 +112,7 @@ export default function AuthProvider(props: Props) {
                     if (fleteroData) {
                         setUsuario(fleteroData);
                         setEsTransportista(true);
+                        await registrarTokenFletero(fleteroData.fletero_id); // ← agrega esto
                         router.replace('/Screen/Home/ScreenHomeFletero' as any);
                     } else {
                         await supabase.auth.signOut();

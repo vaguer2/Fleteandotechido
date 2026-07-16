@@ -3,6 +3,7 @@ import {ActivityIndicator,FlatList,KeyboardAvoidingView,Platform,StyleSheet,Text
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
+import { enviarNotificacion, obtenerTokenCliente, obtenerTokenFletero } from '../../../hooks/useNotificaciones';
 
 export default function ScreenMensajes() {
     const { usuario, esTransportista } = useAuth();
@@ -87,9 +88,28 @@ export default function ScreenMensajes() {
                 contenido,
             });
 
-        if (error) {
+        if (!error) {
+            // Notificar al otro participante
+            if (miTipo === 'usuario') {
+                // Cliente envió mensaje → notificar al fletero
+                const tokenFletero = await obtenerTokenFletero(solicitudId);
+                await enviarNotificacion(
+                    tokenFletero,
+                    '💬 Nuevo mensaje',
+                    `Tu cliente te escribió: ${contenido.slice(0, 50)}`
+                );
+            } else {
+                // Fletero envió mensaje → notificar al cliente
+                const tokenCliente = await obtenerTokenCliente(solicitudId);
+                await enviarNotificacion(
+                    tokenCliente,
+                    '💬 Nuevo mensaje de tu fletero',
+                    `${contenido.slice(0, 50)}`
+                );
+            }
+        } else {
             console.log('Error al enviar mensaje:', error);
-            setTexto(contenido); // restaurar si falló
+            setTexto(contenido);
         }
 
         setEnviando(false);

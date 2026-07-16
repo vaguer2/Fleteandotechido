@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Alert, ActivityIndicator } from 'react-native';
+import {
+  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
+  View, Image, Alert, ActivityIndicator
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../../providers/AuthProvider';
@@ -13,69 +16,90 @@ const TIPOS_CARGA = [
   { id: 5, key: 'otros', label: 'Otros objetos pesados' },
 ];
 
-const RANGOS_PESO = [
-  { id: '100-300', label: '100–300 kg', tonelaje: 0.5 },
-  { id: '300-600', label: '300–600 kg', tonelaje: 1.0 },
-  { id: '600+', label: '600+ kg', tonelaje: 1.5 },
-];
+// Rangos de peso por categoría — cada tonelaje está cubierto en el tabulador
+const RANGOS_POR_CATEGORIA = {
+  mudanza: [
+    { id: '100-300', label: '100–300 kg', tonelaje: 0.3 },
+    { id: '300-600', label: '300–600 kg', tonelaje: 0.5 },
+    { id: '600-1000', label: '600 kg – 1 ton', tonelaje: 1.0 },
+    { id: '1000-2000', label: '1 ton – 2 ton', tonelaje: 1.5 },
+  ],
+  electrodomesticos: [
+    { id: '50-150', label: '50–150 kg', tonelaje: 0.3 },
+    { id: '150-300', label: '150–300 kg', tonelaje: 0.3 },
+    { id: '300-500', label: '300–500 kg', tonelaje: 0.5 },
+  ],
+  mercancia: [
+    { id: '100-300', label: '100–300 kg', tonelaje: 0.3 },
+    { id: '300-600', label: '300–600 kg', tonelaje: 0.5 },
+    { id: '600-1000', label: '600 kg – 1 ton', tonelaje: 1.0 },
+    { id: '1000-2000', label: '1 ton – 2 ton', tonelaje: 1.5 },
+  ],
+  construccion: [
+    { id: '300-600', label: '300–600 kg', tonelaje: 0.5 },
+    { id: '600-1000', label: '600 kg – 1 ton', tonelaje: 1.0 },
+    { id: '1000-2000', label: '1 ton – 2 ton', tonelaje: 1.5 },
+    { id: '2000+', label: 'Más de 2 ton', tonelaje: 2.0 },
+  ],
+  otros: [
+    { id: '50-150', label: '50–150 kg', tonelaje: 0.3 },
+    { id: '150-300', label: '150–300 kg', tonelaje: 0.3 },
+    { id: '300-600', label: '300–600 kg', tonelaje: 0.5 },
+    { id: '600-1000', label: '600 kg – 1 ton', tonelaje: 1.0 },
+  ],
+};
 
 export default function ScreenPedido() {
   const router = useRouter();
   const { usuario } = useAuth();
-
   const [tipoCarga, setTipoCarga] = useState(null);
   const [pesoAprox, setPesoAprox] = useState(null);
   const [detalle, setDetalle] = useState('');
   const [fotos, setFotos] = useState([]);
   const [enviando, setEnviando] = useState(false);
 
-  const seleccionarFoto = async () => {
-    if (fotos.length >= 4) return;
+  // Cuando cambia el tipo de carga, resetea el peso seleccionado
+  const seleccionarTipo = (key) => {
+    setTipoCarga(key);
+    setPesoAprox(null);
+  };
 
+  const rangosActuales = tipoCarga ? RANGOS_POR_CATEGORIA[tipoCarga] : [];
+
+  const seleccionarFoto = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permiso.granted) {
       Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería.');
       return;
     }
-
-    const resultados = await ImagePicker.launchImageLibraryAsync({
+    const resultado = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
     });
-
-    if (!resultados.canceled) {
-      setFotos([...fotos, resultados.assets[0].uri]);
+    if (!resultado.canceled) {
+      setFotos(prev => [...prev, resultado.assets[0].uri]);
     }
   };
 
-  // Sube una foto al Storage de Supabase y devuelve la URL pública
+  const eliminarFoto = (index) => {
+    setFotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const subirFotoAStorage = async (uri, index) => {
     const nombreArchivo = `cargamento_${Date.now()}_${index}.jpg`;
-
     try {
       const response = await fetch(uri);
       const arrayBuffer = await response.arrayBuffer();
-
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('cargamentos')
-        .upload(nombreArchivo, arrayBuffer, {
-          contentType: 'image/jpeg',
-        });
-
-      if (error) {
-        console.log('Error al subir foto:', error);
-        return null;
-      }
-
+        .upload(nombreArchivo, arrayBuffer, { contentType: 'image/jpeg' });
+      if (error) return null;
       const { data: urlData } = supabase.storage
         .from('cargamentos')
         .getPublicUrl(nombreArchivo);
-
       return urlData.publicUrl;
-
-    } catch (error) {
-      console.log('Error en subirFotoAStorage:', error);
+    } catch {
       return null;
     }
   };
@@ -93,14 +117,11 @@ export default function ScreenPedido() {
       Alert.alert('Error', 'No se detectó tu sesión. Vuelve a iniciar sesión.');
       return;
     }
-
     setEnviando(true);
     try {
       const categoriaSeleccionada = TIPOS_CARGA.find((t) => t.key === tipoCarga);
-      const rangoSeleccionado = RANGOS_PESO.find((r) => r.id === pesoAprox);
+      const rangoSeleccionado = rangosActuales.find((r) => r.id === pesoAprox);
 
-      // 1. Insertar la solicitud principal como BORRADOR
-      //    (todavia no es visible para los fleteros hasta que se confirme al final del flujo)
       const { data: solicitud, error: errorSolicitud } = await supabase
         .from('solicitud')
         .insert({
@@ -114,30 +135,26 @@ export default function ScreenPedido() {
         .single();
 
       if (errorSolicitud) {
-        console.log('Error al crear solicitud:', errorSolicitud);
         Alert.alert('Error', 'No se pudo crear la solicitud. Intenta de nuevo.');
         return;
       }
 
-      // 2. Subir las fotos y guardarlas en cargamento
       for (let i = 0; i < fotos.length; i++) {
         const urlFoto = await subirFotoAStorage(fotos[i], i);
-
-        await supabase.from('cargamento').insert({
-          solicitud_id: solicitud.solicitud_id,
-          foto_url: urlFoto,
-          descripcion: detalle,
-        });
+        if (urlFoto) {
+          await supabase.from('cargamento').insert({
+            solicitud_id: solicitud.solicitud_id,
+            foto_url: urlFoto,
+            descripcion: detalle,
+          });
+        }
       }
 
-      // 3. Continuar al siguiente paso: seleccionar la ruta
       router.push({
         pathname: '/Screen/Map/ScreenMapSelectionUser',
         params: { solicitudId: solicitud.solicitud_id },
       });
-
-    } catch (error) {
-      console.log('Error general:', error);
+    } catch {
       Alert.alert('Error', 'Ocurrió un problema al enviar tu solicitud.');
     } finally {
       setEnviando(false);
@@ -145,9 +162,20 @@ export default function ScreenPedido() {
   };
 
   return (
+    
     <ScrollView contentContainerStyle={styles.container}>
+
+
+
+      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <Text style={styles.backArrow}>‹</Text>
+      </TouchableOpacity>
+
+
+
       <Text style={styles.title}>Nuevo flete</Text>
 
+      {/* Stepper */}
       <View style={styles.stepsRow}>
         <TouchableOpacity onPress={() => router.back()}>
           <View style={[styles.stepCircle, styles.stepActive]}>
@@ -167,7 +195,6 @@ export default function ScreenPedido() {
           <Text style={styles.stepPendingText}>4</Text>
         </View>
       </View>
-
       <View style={styles.stepsLabelsRow}>
         <Text style={styles.stepLabelActive}>Carga</Text>
         <Text style={styles.stepLabelPending}>Ruta</Text>
@@ -175,13 +202,14 @@ export default function ScreenPedido() {
         <Text style={styles.stepLabelPending}>Confirmar</Text>
       </View>
 
+      {/* Tipo de carga */}
       <Text style={styles.sectionTitle}>¿Qué vas a enviar?</Text>
       <View style={styles.grid}>
         {TIPOS_CARGA.map((tipo) => (
           <TouchableOpacity
             key={tipo.key}
             style={[styles.option, tipoCarga === tipo.key && styles.optionSelected]}
-            onPress={() => setTipoCarga(tipo.key)}
+            onPress={() => seleccionarTipo(tipo.key)}
           >
             <Text style={[styles.optionText, tipoCarga === tipo.key && styles.optionTextSelected]}>
               {tipo.label}
@@ -190,39 +218,49 @@ export default function ScreenPedido() {
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Peso aproximado</Text>
-      <View style={styles.gridRow}>
-        {RANGOS_PESO.map((rango) => (
-          <TouchableOpacity
-            key={rango.id}
-            style={[styles.pill, pesoAprox === rango.id && styles.pillSelected]}
-            onPress={() => setPesoAprox(rango.id)}
-          >
-            <Text style={[styles.pillText, pesoAprox === rango.id && styles.pillTextSelected]}>
-              {rango.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Peso aproximado — solo aparece cuando hay tipo seleccionado */}
+      {tipoCarga && (
+        <>
+          <Text style={styles.sectionTitle}>Peso aproximado</Text>
+          <View style={styles.gridRow}>
+            {rangosActuales.map((rango) => (
+              <TouchableOpacity
+                key={rango.id}
+                style={[styles.pill, pesoAprox === rango.id && styles.pillSelected]}
+                onPress={() => setPesoAprox(rango.id)}
+              >
+                <Text style={[styles.pillText, pesoAprox === rango.id && styles.pillTextSelected]}>
+                  {rango.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
 
-      <Text style={styles.selectionTitle}>Fotografías del cargamento</Text>
-      <View style={styles.fotosGrid}>
-        {[0, 1, 2, 3].map((i) => (
-          <TouchableOpacity
-            key={i}
-            style={[styles.fotoBox, fotos[i] && styles.fotoBoxLlena]}
-            onPress={seleccionarFoto}
-          >
-            {fotos[i] ? (
-              <Image source={{ uri: fotos[i] }} style={styles.fotoImagen} />
-            ) : (
-              <Text style={styles.fotoPlus}>+</Text>
-            )}
+      {/* Fotos del cargamento — flujo dinámico */}
+      <Text style={styles.sectionTitle}>Fotografías del cargamento</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.fotosScroll}>
+        <View style={styles.fotosRow}>
+          {fotos.map((uri, index) => (
+            <View key={index} style={styles.fotoBox}>
+              <Image source={{ uri }} style={styles.fotoImagen} />
+              <TouchableOpacity
+                style={styles.fotoEliminar}
+                onPress={() => eliminarFoto(index)}
+              >
+                <Text style={styles.fotoEliminarTxt}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity style={styles.fotoAgregar} onPress={seleccionarFoto}>
+            <Text style={styles.fotoPlus}>+</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-      <Text style={styles.fotoHint}>Agregar hasta 4 fotos para ayudar al fletero a prepararse mejor</Text>
+        </View>
+      </ScrollView>
+      <Text style={styles.fotoHint}>Toca + para agregar fotos. Ayudan al fletero a prepararse mejor.</Text>
 
+      {/* Descripción */}
       <Text style={styles.sectionTitle}>Descripción adicional</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
@@ -233,56 +271,91 @@ export default function ScreenPedido() {
       />
 
       <TouchableOpacity
-        style={[styles.button, enviando && { opacity: 0.7 }]}
+        style={[styles.button, (enviando || !tipoCarga || !pesoAprox) && { opacity: 0.6 }]}
         onPress={enviarSolicitud}
-        disabled={enviando}
+        disabled={enviando || !tipoCarga || !pesoAprox}
       >
-        {enviando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Siguiente: elegir ruta</Text>
-        )}
+        {enviando
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.buttonText}>Siguiente: elegir ruta</Text>
+        }
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#fff', flexGrow: 1 },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 16, color: '#1c2b4a', marginTop: 30 },
+  container: { padding: 20, backgroundColor: '#fff', paddingBottom: 40 },
+  title: { fontSize: 22, fontWeight: '700', color: '#1A1A2E', marginBottom: 20 },
   stepsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  stepCircle: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  stepDone: { backgroundColor: '#1c2b4a' },
-  stepDoneText: { color: '#fff', fontWeight: '700' },
-  stepActive: { backgroundColor: '#ff7a00' },
-  stepActiveText: { color: '#fff', fontWeight: '700' },
-  stepPending: { backgroundColor: '#e9ecf2' },
-  stepPendingText: { color: '#9aa3b2', fontWeight: '700' },
-  stepLine: { flex: 1, height: 2, backgroundColor: '#e9ecf2' },
-  stepLineActive: { backgroundColor: '#1c2b4a' },
-  stepsLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18 },
-  stepLabelDone: { fontSize: 12, color: '#1c2b4a', fontWeight: '600' },
-  stepLabelActive: { fontSize: 12, color: '#ff7a00', fontWeight: '700' },
-  stepLabelPending: { fontSize: 12, color: '#9aa3b2' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1c2b4a', marginBottom: 10, marginTop: 6 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 8 },
-  gridRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  option: { width: '48%', borderWidth: 1, borderColor: '#e1e4ea', borderRadius: 12, paddingVertical: 18, alignItems: 'center', marginBottom: 12, backgroundColor: '#fff' },
-  optionSelected: { borderColor: '#ff7a00', backgroundColor: '#fff4ea' },
-  optionText: { fontSize: 14, fontWeight: '600', color: '#555' },
-  optionTextSelected: { color: '#ff7a00' },
-  pill: { flex: 1, borderWidth: 1, borderColor: '#e1e4ea', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginHorizontal: 4, backgroundColor: '#fff' },
-  pillSelected: { borderColor: '#ff7a00', backgroundColor: '#fff4ea' },
-  pillText: { fontSize: 13, fontWeight: '600', color: '#555' },
-  pillTextSelected: { color: '#ff7a00' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, fontSize: 15, backgroundColor: '#fff' },
-  textArea: { minHeight: 70, textAlignVertical: 'top' },
-  button: { backgroundColor: '#1c2b4a', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  fotosGrid: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  fotoBox: { width: 76, height: 76, borderRadius: 12, borderWidth: 2, borderColor: '#B8F0C8', borderStyle: 'dashed', backgroundColor: '#F0FBF4', justifyContent: 'center', alignItems: 'center' },
-  fotoBoxLlena: { borderStyle: 'solid', borderColor: '#22C55E' },
-  fotoImagen: { width: '100%', height: '100%', borderRadius: 10 },
-  fotoPlus: { fontSize: 24, color: '#86EFAC' },
-  fotoHint: { fontSize: 12, color: '#94A3B8', marginBottom: 12 },
+  stepCircle: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  stepActive: { backgroundColor: '#FF6B00' },
+  stepPending: { backgroundColor: '#E5E7EB' },
+  stepActiveText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  stepPendingText: { color: '#9CA3AF', fontWeight: '600', fontSize: 13 },
+  stepLine: { flex: 1, height: 2, backgroundColor: '#E5E7EB' },
+  stepsLabelsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
+  stepLabelActive: { fontSize: 11, color: '#FF6B00', fontWeight: '600' },
+  stepLabelPending: { fontSize: 11, color: '#9CA3AF' },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 10, marginTop: 16 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  option: {
+    paddingVertical: 10, paddingHorizontal: 16,
+    borderRadius: 10, borderWidth: 1.5, borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  optionSelected: { backgroundColor: '#FF6B00', borderColor: '#FF6B00' },
+  optionText: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  optionTextSelected: { color: '#fff', fontWeight: '700' },
+  gridRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: {
+    paddingVertical: 8, paddingHorizontal: 14,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  pillSelected: { backgroundColor: '#1A1A2E', borderColor: '#1A1A2E' },
+  pillText: { fontSize: 13, color: '#374151' },
+  pillTextSelected: { color: '#fff', fontWeight: '600' },
+  fotosScroll: { marginTop: 4 },
+  fotosRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingBottom: 4 },
+  fotoBox: {
+    width: 80, height: 80, borderRadius: 10,
+    overflow: 'hidden', position: 'relative',
+  },
+  fotoImagen: { width: 80, height: 80 },
+  fotoEliminar: {
+    position: 'absolute', top: 2, right: 2,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    width: 20, height: 20, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  fotoEliminarTxt: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  fotoAgregar: {
+    width: 80, height: 80, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#E5E7EB',
+    borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  fotoPlus: { fontSize: 28, color: '#9CA3AF', lineHeight: 32 },
+  fotoHint: { fontSize: 12, color: '#9CA3AF', marginTop: 6, marginBottom: 4 },
+  input: {
+    borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
+    padding: 12, fontSize: 14, color: '#1A1A2E', backgroundColor: '#F9FAFB',
+  },
+  textArea: { height: 90, textAlignVertical: 'top' },
+  button: {
+    backgroundColor: '#1e2d4a', borderRadius: 12,
+    paddingVertical: 16, alignItems: 'center', marginTop: 24,
+  },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  backBtn: {
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+    padding: 4,
+  },
+  backArrow: {
+    fontSize: 32,
+    color: '#1A1A2E',
+    lineHeight: 36,
+  },
 });

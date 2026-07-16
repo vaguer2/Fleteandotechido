@@ -148,6 +148,10 @@ export default function ScreenFechaPedido() {
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <Text style={styles.backArrow}>‹</Text>
+            </TouchableOpacity>
+
             <View style={styles.stepperRow}>
                 {PASOS.map((paso, index) => {
                     const num = index + 1;
@@ -296,4 +300,15 @@ const styles = StyleSheet.create({
     boton: { backgroundColor: '#0F172A', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
     botonDeshabilitado: { backgroundColor: '#94A3B8' },
     botonTexto: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+    
+    backBtn: {
+        marginBottom: 8,
+        alignSelf: 'flex-start',
+        padding: 4,
+    },
+    backArrow: {
+        fontSize: 32,
+        color: '#1A1A2E',
+        lineHeight: 36,
+    },
 });
