@@ -12,9 +12,7 @@ export default function ScreenSettings() {
   
   const MENU_ITEMS = [
     { id: 'datos', label: 'Datos personales' },
-    { id: 'direcciones', label: 'Mis direcciones' },
     { id: 'historial', label: 'Historial', onPress: () => router.push('/Screen/Historial/ScreenHistorialUsuario') },
-    { id: 'notificaciones', label: 'Notificaciones' },
     { id: 'seguridad', label: 'Seguridad' },
     { id: 'ayuda', label: 'Ayuda y soporte' },
   ];

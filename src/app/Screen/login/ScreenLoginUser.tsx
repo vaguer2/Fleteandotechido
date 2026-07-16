@@ -109,10 +109,11 @@ export default function ScreenLoginUser() {
                     </Pressable>
                 </View>
 
+{/*
                 <Pressable onPress={() => console.log('recuperando...')}>
                     <Text style={styles.linkNaranja}>¿Olvidaste tu contraseña?</Text>
                 </Pressable>
-
+*/}
                 <Pressable
                     style={({ pressed }) => [styles.botonEntrar, pressed && { opacity: 0.8 }]}
                     onPress={iniciarSesion}
@@ -123,7 +124,7 @@ export default function ScreenLoginUser() {
                         : <Text style={styles.textoBotonEntrar}>Entrar</Text>
                     }
                 </Pressable>
-
+{/*
                 <View style={styles.divider}>
                     <View style={styles.linea} />
                     <Text style={styles.textoDivider}>o continúa con</Text>
@@ -136,7 +137,7 @@ export default function ScreenLoginUser() {
                 >
                     <Text style={styles.textoGoogle}>G  Google</Text>
                 </Pressable>
-
+*/}
                 <View style={styles.filaRegistro}>
                     <Text style={styles.textoGris}>¿No tienes cuenta? </Text>
                     <Pressable onPress={() => router.push('/Screen/Register/ScreenUserRegister')}>
@@ -206,6 +207,7 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         alignItems: 'center',
         marginBottom: 20,
+        marginTop:15
     },
     textoBotonEntrar: {
         fontFamily: 'Inter_700Bold',

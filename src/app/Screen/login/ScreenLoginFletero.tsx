@@ -105,11 +105,11 @@ export default function ScreenLoginFletero() {
                         />
                     </Pressable>
                 </View>
-
-                <Pressable onPress={() => console.log('recuperando...')}>
+{/*
+               <Pressable onPress={() => console.log('recuperando...')}>
                     <Text style={styles.linkNaranja}>¿Olvidaste tu contraseña?</Text>
                 </Pressable>
-
+                */}
                 <Pressable
                     style={({ pressed }) => [styles.botonEntrar, pressed && { opacity: 0.8 }]}
                     onPress={iniciarSesion}
@@ -121,18 +121,7 @@ export default function ScreenLoginFletero() {
                     }
                 </Pressable>
 
-                <View style={styles.divider}>
-                    <View style={styles.linea} />
-                    <Text style={styles.textoDivider}>o continúa con</Text>
-                    <View style={styles.linea} />
-                </View>
 
-                <Pressable
-                    style={({ pressed }) => [styles.botonGoogle, pressed && { opacity: 0.8 }]}
-                    onPress={() => console.log('entrando por google...')}
-                >
-                    <Text style={styles.textoGoogle}>G  Google</Text>
-                </Pressable>
 
                 <View style={styles.filaRegistro}>
                     <Text style={styles.textoGris}>¿No tienes cuenta? </Text>
@@ -154,8 +143,8 @@ const styles = StyleSheet.create({
     etiqueta: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#333', marginBottom: 6 },
     input: { width: '100%', borderWidth: 1, borderColor: '#ddd', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: 'Inter_400Regular', color: '#333', marginBottom: 16 },
     linkNaranja: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#F97316', textDecorationLine: 'underline', marginBottom: 20 },
-    botonEntrar: { backgroundColor: '#0D2240', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 20 },
-    textoBotonEntrar: { fontFamily: 'Inter_700Bold', color: '#fff', fontSize: 15 },
+    botonEntrar: { backgroundColor: '#0D2240', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 25, marginTop:15 },
+    textoBotonEntrar: { fontFamily: 'Inter_700Bold', color: '#fff', fontSize: 15, },
     divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     linea: { flex: 1, height: 1, backgroundColor: '#eee' },
     textoDivider: { fontFamily: 'Inter_400Regular', fontSize: 12, color: '#aaa', marginHorizontal: 10 },
