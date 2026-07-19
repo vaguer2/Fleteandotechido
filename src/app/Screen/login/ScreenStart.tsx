@@ -53,7 +53,7 @@ return (
         styles.botonBorde,
         pressed && styles.botonBordePresionado
       ]} onPress={() => router.push('/Screen/Login/ScreenLoginFletero')}>
-        <Text style={styles.colorBotonTexto}>Soy transportista</Text>
+        <Text style={styles.colorBotonTexto}>Soy fletero</Text>
       </Pressable>
     </View>
 

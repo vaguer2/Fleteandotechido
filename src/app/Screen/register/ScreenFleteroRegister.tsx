@@ -187,19 +187,6 @@ export default function ScreenFleteroRegister() {
                         : <Text style={styles.textoBotonEntrar}>Crear cuenta</Text>
                     }
                 </Pressable>
-
-                <View style={styles.divider}>
-                    <View style={styles.linea} />
-                    <Text style={styles.textoDivider}>o regístrate con</Text>
-                    <View style={styles.linea} />
-                </View>
-
-                <Pressable
-                    style={({ pressed }) => [styles.botonGoogle, pressed && { opacity: 0.8 }]}
-                    onPress={() => console.log('entrando por google...')}
-                >
-                    <Text style={styles.textoGoogle}>G  Google</Text>
-                </Pressable>
             </View>
         </ScrollView>
     );

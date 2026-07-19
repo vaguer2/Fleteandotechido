@@ -54,7 +54,7 @@ export default function AuthProvider(props: Props) {
                     .single();
 
                 if (usuarioData) {
-                    console.log('*** Entrando al bloque de usuario, registrando token...');
+                    //console.log('*** Entrando al bloque de usuario, registrando token...');
                     setUsuario(usuarioData);
                     await registrarTokenNotificaciones(usuarioData.usuario_id);
                     router.replace('/Screen/Home/ScreenHomeUser');
@@ -135,11 +135,11 @@ export default function AuthProvider(props: Props) {
     // Suscripción Realtime para actualizar datos del fletero en tiempo real
     useEffect(() => {
         if (!usuario?.fletero_id) {
-            console.log('No hay fletero_id, no se suscribe');
+            //console.log('No hay fletero_id, no se suscribe');
             return;
         }
 
-        console.log('Suscribiendo a cambios del fletero:', usuario.fletero_id);
+        //console.log('Suscribiendo a cambios del fletero:', usuario.fletero_id);
 
         const canal = supabase
             .channel(`fletero_${usuario.fletero_id}`)
@@ -151,12 +151,12 @@ export default function AuthProvider(props: Props) {
                     filter: `fletero_id=eq.${usuario.fletero_id}`
                 },
                 (payload) => {
-                    console.log('Cambio detectado en fletero:', payload.new);
+                    //console.log('Cambio detectado en fletero:', payload.new);
                     setUsuario((prev: any) => ({ ...prev, ...payload.new }));
                 }
             )
             .subscribe((status) => {
-                console.log('Estado de la suscripcion:', status);
+                //console.log('Estado de la suscripcion:', status);
             });
 
         return () => {

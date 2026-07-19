@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
 
-export default function ScreenSubirDatosFletero() {
+export default function ScreenSubirDatosUser() {
     const router = useRouter();
     const { usuario, setUsuario } = useAuth();
     const { width, height } = useWindowDimensions();
@@ -161,12 +161,12 @@ export default function ScreenSubirDatosFletero() {
     };
 
     const subirFotoPerfil = async (uri) => {
-        if (!usuario?.fletero_id) {
+        if (!usuario?.usuario_id) {
             return null;
         }
 
         const nombreArchivo =
-            `perfil_fletero_${usuario.fletero_id}_${Date.now()}.jpg`;
+            `perfil_usuario_${usuario.usuario_id}_${Date.now()}.jpg`;
 
         try {
             const response = await fetch(uri);
@@ -188,7 +188,7 @@ export default function ScreenSubirDatosFletero() {
 
             if (error) {
                 console.log(
-                    'Error al subir foto:',
+                    'Error al subir la foto del usuario:',
                     error
                 );
 
@@ -208,7 +208,7 @@ export default function ScreenSubirDatosFletero() {
             );
         } catch (error) {
             console.log(
-                'Error general al subir foto:',
+                'Error general al subir la foto:',
                 error
             );
 
@@ -232,10 +232,10 @@ export default function ScreenSubirDatosFletero() {
             return;
         }
 
-        if (!usuario?.fletero_id) {
+        if (!usuario?.usuario_id) {
             Alert.alert(
                 'Error',
-                'No se encontró el identificador del fletero.'
+                'No se encontró el identificador del usuario.'
             );
 
             return;
@@ -264,24 +264,26 @@ export default function ScreenSubirDatosFletero() {
 
             const { error } =
                 await supabase
-                    .from('fletero')
+                    .from('usuario')
                     .update({
                         nombre:
                             nombreLimpio,
+
                         telefono:
                             telefonoLimpio ||
                             null,
+
                         foto_url:
                             urlFotoFinal,
                     })
                     .eq(
-                        'fletero_id',
-                        usuario.fletero_id
+                        'usuario_id',
+                        usuario.usuario_id
                     );
 
             if (error) {
                 console.log(
-                    'Error al actualizar fletero:',
+                    'Error al actualizar el usuario:',
                     error
                 );
 
@@ -319,7 +321,7 @@ export default function ScreenSubirDatosFletero() {
             );
         } catch (error) {
             console.log(
-                'Error general al guardar:',
+                'Error general al guardar los datos:',
                 error
             );
 
@@ -337,11 +339,11 @@ export default function ScreenSubirDatosFletero() {
 
     const inicial =
         nombre.trim().charAt(0).toUpperCase() ||
-        'F';
+        'U';
 
     return (
         <View style={styles.container}>
-            {/* Encabezado seguro */}
+            {/* Encabezado protegido */}
             <SafeAreaView
                 style={
                     styles.headerSafeArea
@@ -424,7 +426,7 @@ export default function ScreenSubirDatosFletero() {
                             false
                         }
                     >
-                        {/* Foto de perfil */}
+                        {/* Foto del usuario */}
                         <View
                             style={
                                 styles.fotoPerfilContainer
@@ -512,7 +514,7 @@ export default function ScreenSubirDatosFletero() {
                         >
                             <Text
                                 style={
-                                    styles.sectionLabel
+                                    styles.sectionLabelPrimero
                                 }
                             >
                                 NOMBRE COMPLETO
@@ -646,6 +648,8 @@ export default function ScreenSubirDatosFletero() {
                             }
                             disabled={guardando}
                             activeOpacity={0.85}
+                            accessibilityRole="button"
+                            accessibilityLabel="Guardar cambios"
                         >
                             {guardando ? (
                                 <ActivityIndicator
@@ -864,6 +868,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 5,
         elevation: 2,
+    },
+
+    sectionLabelPrimero: {
+        marginTop: 0,
+        marginBottom: 8,
+        color: '#64748B',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.8,
     },
 
     sectionLabel: {

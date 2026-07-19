@@ -33,14 +33,14 @@ export async function registrarTokenNotificaciones(usuarioId) {
             projectId: '4909f413-9bcf-4e70-91ec-f46299d0fbc9',
         });
 
-        console.log('Token generado:', tokenData.data);
+        //console.log('Token generado:', tokenData.data);
 
         const { error } = await supabase
             .from('usuario')
             .update({ push_token: tokenData.data })
             .eq('usuario_id', usuarioId);
 
-        console.log('Error al guardar token:', error);
+        //console.log('Error al guardar token:', error);
 
         return tokenData.data;
     } catch (error) {
