@@ -1,23 +1,33 @@
 {
   "expo": {
     "name": "FleteandoTe",
-    "slug": "FleteandoTe",
-    "version": "1.0.0",
+    "slug": "fleteandote",
+    "version": "2.15.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "fleteandote",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/iconF.png",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/iconF.png"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/iconF.png",
+        "backgroundColor": "#0A2348"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAvt9AnpvHfi3GKapnoSUKRqLTNR9tAaWo"
+        }
+      },
+      "package": "com.offdev.FleteandoTe",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "static",
@@ -28,17 +38,32 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0A2348",
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/iconF.png",
+            "imageWidth": 150
           }
+        }
+      ],
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/iconF.png",
+          "color": "#0A2348"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4909f413-9bcf-4e70-91ec-f46299d0fbc9"
+      }
+    },
+    "owner": "offdev"
   }
 }

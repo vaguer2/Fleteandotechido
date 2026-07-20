@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-export default function MyNavegation() {
+export default function ScreenResultado() {
   return (
     <View>
-      <Text>MyNavegation</Text>
+      <Text>ScreenResultado</Text>
     </View>
   )
 }

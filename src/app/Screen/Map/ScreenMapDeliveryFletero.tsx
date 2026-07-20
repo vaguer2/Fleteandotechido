@@ -1,10 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-export default function ScreenHomeDelivery() {
+export default function ScreenMapDeliveryFletero() {
   return (
+    //Aqui va la pantalla "SERVICIO ACTIVO FLETERO"
     <View>
-      <Text>ScreenHomeDelivery</Text>
+      <Text>ScreenMapDeliveryFletero</Text>
     </View>
   )
 }

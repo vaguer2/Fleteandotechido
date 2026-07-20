@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "17127862275",
+    "project_id": "fleteandote-7d81e",
+    "storage_bucket": "fleteandote-7d81e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17127862275:android:c8941ce3f60d8005971e36",
+        "android_client_info": {
+          "package_name": "com.offdev.FleteandoTe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDk8QU4By032rjVNVjciKwQMh77g2XFIEg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
