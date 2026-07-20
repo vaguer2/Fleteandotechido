@@ -199,11 +199,6 @@ export default function ScreenHomeUser() {
                             {nombre} 👋
                         </Text>
 
-                        <Text style={styles.totalSolicitudes} numberOfLines={1}>
-                            {cargando
-                                ? 'Consultando tus solicitudes...'
-                                : `${totalSolicitudes} ${totalSolicitudes === 1 ? 'solicitud' : 'solicitudes'} en total`}
-                        </Text>
                     </View>
 
                     <TouchableOpacity
