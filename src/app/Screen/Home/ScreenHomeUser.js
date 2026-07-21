@@ -1,25 +1,43 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useWindowDimensions,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../providers/AuthProvider';
 
 const badgeColor = estado => {
     switch (estado) {
-        case 'publicada': return { bg: '#FFF3E0', text: '#E65100', label: 'Buscando fletero' };
-        case 'aceptada': return { bg: '#FEF9C3', text: '#854D0E', label: 'Fletero en camino' };
-        case 'en_progreso': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Flete en progreso' };
-        case 'completada': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Entregado' };
-        case 'cancelada': return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelado' };
-        default: return { bg: '#F5F5F5', text: '#555555', label: estado ?? 'Sin estado' };
+        case 'publicada':
+            return { bg: '#FFF3E0', text: '#E65100', label: 'Buscando fletero' };
+        case 'aceptada':
+            return { bg: '#FEF9C3', text: '#854D0E', label: 'Fletero en camino' };
+        case 'en_progreso':
+            return { bg: '#E8F5E9', text: '#2E7D32', label: 'Flete en progreso' };
+        case 'completada':
+            return { bg: '#E8F5E9', text: '#2E7D32', label: 'Entregado' };
+        case 'cancelada':
+            return { bg: '#FFEBEE', text: '#C62828', label: 'Cancelado' };
+        default:
+            return { bg: '#F5F5F5', text: '#555555', label: estado ?? 'Sin estado' };
     }
 };
 
 const obtenerSaludo = () => {
     const hora = new Date().getHours();
+
     if (hora >= 5 && hora < 12) return 'Buenos días';
     if (hora >= 12 && hora < 19) return 'Buenas tardes';
+
     return 'Buenas noches';
 };
 
@@ -38,11 +56,14 @@ export default function ScreenHomeUser() {
     const nombre = usuario?.nombre?.trim() || 'Usuario';
     const fotoPerfil = usuario?.foto_url?.trim() || null;
     const inicial = nombre.charAt(0).toUpperCase() || 'U';
-    const totalSolicitudes = solicitudesActivas.length + solicitudesRecientes.length;
 
     useEffect(() => {
         setSaludo(obtenerSaludo());
-        const intervalo = setInterval(() => setSaludo(obtenerSaludo()), 60000);
+
+        const intervalo = setInterval(() => {
+            setSaludo(obtenerSaludo());
+        }, 60000);
+
         return () => clearInterval(intervalo);
     }, []);
 
@@ -90,9 +111,11 @@ export default function ScreenHomeUser() {
             );
 
             setSolicitudesRecientes(
-                solicitudes.filter(solicitud =>
-                    ['completada', 'cancelada'].includes(solicitud.estado)
-                )
+                solicitudes
+                    .filter(solicitud =>
+                        ['completada', 'cancelada'].includes(solicitud.estado)
+                    )
+                    .slice(0, 3)
             );
         } catch (error) {
             console.log('Error general al cargar solicitudes:', error);
@@ -129,6 +152,7 @@ export default function ScreenHomeUser() {
         if (!fechaISO) return 'Sin fecha';
 
         const fecha = new Date(fechaISO);
+
         if (Number.isNaN(fecha.getTime())) return 'Sin fecha';
 
         return fecha.toLocaleDateString('es-MX', {
@@ -143,9 +167,14 @@ export default function ScreenHomeUser() {
         'Flete';
 
     const obtenerRutaTexto = solicitud => {
-        const puntos = Array.isArray(solicitud.punto_ruta) ? solicitud.punto_ruta : [];
-        const destino = puntos.find(punto => punto.tipo === 'destino');
-        return destino?.direccion_texto ?? 'Destino no definido';
+        const puntos = Array.isArray(solicitud.punto_ruta)
+            ? solicitud.punto_ruta
+            : [];
+
+        return (
+            puntos.find(punto => punto.tipo === 'destino')?.direccion_texto ??
+            'Destino no definido'
+        );
     };
 
     const obtenerFletero = solicitud =>
@@ -195,10 +224,14 @@ export default function ScreenHomeUser() {
                     <View style={styles.saludoContainer}>
                         <Text style={styles.saludoSub}>{saludo},</Text>
 
-                        <Text style={styles.saludoNombre} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78}>
+                        <Text
+                            style={styles.saludoNombre}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.78}
+                        >
                             {nombre} 👋
                         </Text>
-
                     </View>
 
                     <TouchableOpacity
@@ -228,7 +261,12 @@ export default function ScreenHomeUser() {
                             accessibilityRole="button"
                             accessibilityLabel="Solicitar nuevo flete"
                         >
-                            <Text style={styles.btnPrincipalText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                            <Text
+                                style={styles.btnPrincipalText}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.85}
+                            >
                                 Solicitar nuevo flete
                             </Text>
                         </TouchableOpacity>
@@ -239,150 +277,218 @@ export default function ScreenHomeUser() {
                         </View>
 
                         {cargando && (
-                            <ActivityIndicator color="#FF6B00" style={styles.indicadorCarga} />
+                            <ActivityIndicator
+                                color="#FF6B00"
+                                style={styles.indicadorCarga}
+                            />
                         )}
 
                         {!cargando && solicitudesActivas.length === 0 && (
-                            <Text style={styles.textoVacio}>No tienes fletes en proceso por ahora.</Text>
+                            <Text style={styles.textoVacio}>
+                                No tienes fletes en proceso por ahora.
+                            </Text>
                         )}
 
-                        {!cargando && solicitudesActivas.map(item => {
-                            const colors = badgeColor(item.estado);
-                            const puedeVerSeguimiento = item.estado === 'en_progreso';
-                            const tieneChat = item.estado === 'aceptada' || item.estado === 'en_progreso';
-                            const fletero = obtenerFletero(item);
+                        {!cargando &&
+                            solicitudesActivas.map(item => {
+                                const colors = badgeColor(item.estado);
+                                const puedeVerSeguimiento = item.estado === 'en_progreso';
+                                const tieneChat =
+                                    item.estado === 'aceptada' ||
+                                    item.estado === 'en_progreso';
+                                const fletero = obtenerFletero(item);
 
-                            return (
-                                <View key={item.solicitud_id} style={styles.card}>
-                                    <TouchableOpacity
-                                        style={[styles.cardContenido, pantallaEstrecha && styles.cardContenidoEstrecho]}
-                                        onPress={() => verDetalleSolicitud(item)}
-                                        activeOpacity={0.75}
-                                        accessibilityRole="button"
-                                        accessibilityLabel="Ver detalles de la solicitud"
-                                    >
-                                        <View style={styles.cardIcono} />
-
-                                        <View style={styles.cardInfo}>
-                                            <Text style={styles.cardTitulo} numberOfLines={1}>{obtenerTitulo(item)}</Text>
-
-                                            <Text style={styles.cardSub} numberOfLines={pantallaEstrecha ? 2 : 1}>
-                                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
-                                            </Text>
-
-                                            
-
-                                            {fletero && (
-                                                <Text style={styles.cardFletero} numberOfLines={1}>
-                                                    {fletero.nombre}{fletero.tipo_vehiculo ? ` · ${fletero.tipo_vehiculo}` : ''}
-                                                </Text>
-                                            )}
-                                        </View>
-
-                                        <View style={[styles.badge, pantallaEstrecha && styles.badgeEstrecho, { backgroundColor: colors.bg }]}>
-                                            <Text style={[styles.badgeText, { color: colors.text }]} numberOfLines={1}>
-                                                {colors.label}
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-
-                                    {tieneChat && (
+                                return (
+                                    <View key={item.solicitud_id} style={styles.card}>
                                         <TouchableOpacity
-                                            style={styles.btnChat}
-                                            onPress={() => router.push(`/Screen/Mensaje/ScreenMensajes?solicitudId=${item.solicitud_id}`)}
-                                            activeOpacity={0.85}
-                                        >
-                                            <Text style={styles.btnChatTexto} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-                                                💬 Chatear con el fletero
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
-
-                                    {puedeVerSeguimiento && (
-                                        <TouchableOpacity
-                                            style={styles.btnSeguimiento}
-                                            onPress={() => verSeguimientoSolicitud(item)}
-                                            activeOpacity={0.85}
+                                            style={[
+                                                styles.cardContenido,
+                                                pantallaEstrecha && styles.cardContenidoEstrecho,
+                                            ]}
+                                            onPress={() => verDetalleSolicitud(item)}
+                                            activeOpacity={0.75}
                                             accessibilityRole="button"
-                                            accessibilityLabel="Ver seguimiento del flete"
+                                            accessibilityLabel="Ver detalles de la solicitud"
                                         >
-                                            <Text style={styles.btnSeguimientoTexto}>🗺 Ver seguimiento del flete</Text>
+                                            <View style={styles.cardIcono} />
+
+                                            <View style={styles.cardInfo}>
+                                                <Text style={styles.cardTitulo} numberOfLines={1}>
+                                                    {obtenerTitulo(item)}
+                                                </Text>
+
+                                                <Text
+                                                    style={styles.cardSub}
+                                                    numberOfLines={pantallaEstrecha ? 2 : 1}
+                                                >
+                                                    {obtenerRutaTexto(item)} ·{' '}
+                                                    {formatearFecha(item.creado_en)}
+                                                </Text>
+
+                                                {fletero && (
+                                                    <Text style={styles.cardFletero} numberOfLines={1}>
+                                                        {fletero.nombre}
+                                                        {fletero.tipo_vehiculo
+                                                            ? ` · ${fletero.tipo_vehiculo}`
+                                                            : ''}
+                                                    </Text>
+                                                )}
+                                            </View>
+
+                                            <View
+                                                style={[
+                                                    styles.badge,
+                                                    pantallaEstrecha && styles.badgeEstrecho,
+                                                    { backgroundColor: colors.bg },
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[styles.badgeText, { color: colors.text }]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {colors.label}
+                                                </Text>
+                                            </View>
                                         </TouchableOpacity>
-                                    )}
-                                </View>
-                            );
-                        })}
+
+                                        {tieneChat && (
+                                            <TouchableOpacity
+                                                style={styles.btnChat}
+                                                onPress={() =>
+                                                    router.push(
+                                                        `/Screen/Mensaje/ScreenMensajes?solicitudId=${item.solicitud_id}`
+                                                    )
+                                                }
+                                                activeOpacity={0.85}
+                                            >
+                                                <Text
+                                                    style={styles.btnChatTexto}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.85}
+                                                >
+                                                    💬 Chatear con el fletero
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {puedeVerSeguimiento && (
+                                            <TouchableOpacity
+                                                style={styles.btnSeguimiento}
+                                                onPress={() => verSeguimientoSolicitud(item)}
+                                                activeOpacity={0.85}
+                                                accessibilityRole="button"
+                                                accessibilityLabel="Ver seguimiento del flete"
+                                            >
+                                                <Text style={styles.btnSeguimientoTexto}>
+                                                    🗺 Ver seguimiento del flete
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                );
+                            })}
 
                         <View style={[styles.seccionHeader, styles.seccionRecientes]}>
                             <Text style={styles.seccionTitulo}>Envíos recientes</Text>
-                            {!cargando && renderContador(solicitudesRecientes.length)}
                         </View>
 
                         {!cargando && solicitudesRecientes.length === 0 && (
-                            <Text style={styles.textoVacio}>Aún no tienes envíos anteriores.</Text>
+                            <Text style={styles.textoVacio}>
+                                Aún no tienes envíos anteriores.
+                            </Text>
                         )}
 
-                        {!cargando && solicitudesRecientes.map(item => {
-                            const colors = badgeColor(item.estado);
-                            const fletero = obtenerFletero(item);
-                            const puedeCalificar = item.estado === 'completada' && !tieneCalificacionAlFletero(item);
+                        {!cargando &&
+                            solicitudesRecientes.map(item => {
+                                const colors = badgeColor(item.estado);
+                                const fletero = obtenerFletero(item);
+                                const puedeCalificar =
+                                    item.estado === 'completada' &&
+                                    !tieneCalificacionAlFletero(item);
 
-                            return (
-                                <View key={item.solicitud_id} style={styles.card}>
-                                    <TouchableOpacity
-                                        style={[styles.cardContenido, pantallaEstrecha && styles.cardContenidoEstrecho]}
-                                        onPress={() => verDetalleSolicitud(item)}
-                                        activeOpacity={0.75}
-                                        accessibilityRole="button"
-                                        accessibilityLabel="Ver detalles de la solicitud"
-                                    >
-                                        <View style={styles.cardIcono} />
-
-                                        <View style={styles.cardInfo}>
-                                            <Text style={styles.cardTitulo} numberOfLines={1}>{obtenerTitulo(item)}</Text>
-
-                                            <Text style={styles.cardSub} numberOfLines={pantallaEstrecha ? 2 : 1}>
-                                                {obtenerRutaTexto(item)} · {formatearFecha(item.creado_en)}
-                                            </Text>
-
-                                            
-                                        </View>
-
-                                        <View style={[styles.badge, pantallaEstrecha && styles.badgeEstrecho, { backgroundColor: colors.bg }]}>
-                                            <Text style={[styles.badgeText, { color: colors.text }]} numberOfLines={1}>
-                                                {colors.label}
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-
-                                    {puedeCalificar && (
+                                return (
+                                    <View key={item.solicitud_id} style={styles.card}>
                                         <TouchableOpacity
-                                            style={styles.btnCalificar}
-                                            onPress={() =>
-                                                router.push({
-                                                    pathname: '/Screen/Calificacion/ScreenCalificacion',
-                                                    params: {
-                                                        solicitudId: String(item.solicitud_id),
-                                                        fleteroNombre: fletero?.nombre ?? 'Tu fletero',
-                                                    },
-                                                })
-                                            }
-                                            activeOpacity={0.85}
+                                            style={[
+                                                styles.cardContenido,
+                                                pantallaEstrecha && styles.cardContenidoEstrecho,
+                                            ]}
+                                            onPress={() => verDetalleSolicitud(item)}
+                                            activeOpacity={0.75}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Ver detalles de la solicitud"
                                         >
-                                            <Text style={styles.btnCalificarTexto} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-                                                ⭐ Calificar servicio
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
+                                            <View style={styles.cardIcono} />
 
-                                    {item.estado === 'completada' && tieneCalificacionAlFletero(item) && (
-                                        <View style={styles.calificacionEnviada}>
-                                            <Text style={styles.calificacionEnviadaTexto}>Calificación enviada</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            );
-                        })}
+                                            <View style={styles.cardInfo}>
+                                                <Text style={styles.cardTitulo} numberOfLines={1}>
+                                                    {obtenerTitulo(item)}
+                                                </Text>
+
+                                                <Text
+                                                    style={styles.cardSub}
+                                                    numberOfLines={pantallaEstrecha ? 2 : 1}
+                                                >
+                                                    {obtenerRutaTexto(item)} ·{' '}
+                                                    {formatearFecha(item.creado_en)}
+                                                </Text>
+                                            </View>
+
+                                            <View
+                                                style={[
+                                                    styles.badge,
+                                                    pantallaEstrecha && styles.badgeEstrecho,
+                                                    { backgroundColor: colors.bg },
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[styles.badgeText, { color: colors.text }]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {colors.label}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        {puedeCalificar && (
+                                            <TouchableOpacity
+                                                style={styles.btnCalificar}
+                                                onPress={() =>
+                                                    router.push({
+                                                        pathname:
+                                                            '/Screen/Calificacion/ScreenCalificacion',
+                                                        params: {
+                                                            solicitudId: String(item.solicitud_id),
+                                                            fleteroNombre:
+                                                                fletero?.nombre ?? 'Tu fletero',
+                                                        },
+                                                    })
+                                                }
+                                                activeOpacity={0.85}
+                                            >
+                                                <Text
+                                                    style={styles.btnCalificarTexto}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.85}
+                                                >
+                                                    ⭐ Calificar servicio
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {item.estado === 'completada' &&
+                                            tieneCalificacionAlFletero(item) && (
+                                                <View style={styles.calificacionEnviada}>
+                                                    <Text style={styles.calificacionEnviadaTexto}>
+                                                        Calificación enviada
+                                                    </Text>
+                                                </View>
+                                            )}
+                                    </View>
+                                );
+                            })}
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -397,7 +503,6 @@ const styles = StyleSheet.create({
     saludoContainer: { flex: 1, minWidth: 0, marginRight: 14 },
     saludoSub: { color: '#B0B8CC', fontSize: 14 },
     saludoNombre: { marginTop: 2, color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-    totalSolicitudes: { marginTop: 5, color: '#818AA3', fontSize: 12 },
     avatarButton: { flexShrink: 0, borderRadius: 24 },
     avatarCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: '#FF6B00' },
     avatarImagen: { width: '100%', height: '100%' },
@@ -426,7 +531,6 @@ const styles = StyleSheet.create({
     cardInfo: { flex: 1, minWidth: 125 },
     cardTitulo: { marginBottom: 3, color: '#1A1A2E', fontSize: 14, fontWeight: '600' },
     cardSub: { color: '#8A8FA8', fontSize: 12, lineHeight: 17 },
-    verDetallesTexto: { marginTop: 4, color: '#FF6B00', fontSize: 11, fontWeight: '600' },
     cardFletero: { marginTop: 3, color: '#FF6B00', fontSize: 11, fontWeight: '600' },
 
     badge: { maxWidth: 135, marginLeft: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, flexShrink: 0 },

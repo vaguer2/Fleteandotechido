@@ -131,6 +131,7 @@ export default function ScreenHomeFletero() {
       setServicioActivo(null);
       return;
     }
+
     const { data, error } = await supabase
       .from('solicitud')
       .select(`
@@ -243,7 +244,8 @@ export default function ScreenHomeFletero() {
         `)
         .eq('fletero_id', fletero.fletero_id)
         .eq('estado', 'completada')
-        .order('hora_fin', { ascending: false, nullsFirst: false });
+        .order('hora_fin', { ascending: false, nullsFirst: false })
+        .limit(3);
 
       if (error) {
         console.log('Error al cargar servicios completados:', error);
@@ -620,12 +622,6 @@ export default function ScreenHomeFletero() {
 
             <View style={styles.seccionCompletadasHeader}>
               <Text style={styles.sectionLabel}>SERVICIOS COMPLETADOS</Text>
-
-              {!cargandoCompletadas && (
-                <View style={styles.contadorCompletadas}>
-                  <Text style={styles.contadorCompletadasTexto}>{solicitudesCompletadas.length}</Text>
-                </View>
-              )}
             </View>
 
             {cargandoCompletadas && (
@@ -749,8 +745,6 @@ const styles = StyleSheet.create({
   textoBotonVerDetalle: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   seccionCompletadasHeader: { marginTop: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  contadorCompletadas: { minWidth: 26, height: 26, paddingHorizontal: 8, borderRadius: 13, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center', marginTop: -6 },
-  contadorCompletadasTexto: { color: '#166534', fontSize: 12, fontWeight: '700' },
   indicadorCompletadas: { marginVertical: 18 },
 
   cardCompletada: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
